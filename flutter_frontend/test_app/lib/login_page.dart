@@ -43,12 +43,13 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Login failed');
       }
     } catch (e) {
-      setState(() => _error = 'Sign in failed. ${e.toString().replaceAll("Exception: ", "")}');
+      setState(() {
+        _error = 'Sign in failed. ${e.toString().replaceAll("Exception: ", "")}';
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
-
 
   String? _validateEmail(String? v) {
     final email = v?.trim() ?? '';
@@ -65,96 +66,205 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
+  
+  InputDecoration _inputDecoration({
+    required Widget icon,
+    required String hint,
+  }) =>
+      InputDecoration(
+        prefixIcon: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 16, end: 12),
+          child: icon,
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.grey[100],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context).size;
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 480),
+      body: Stack(
+        children: [
+          // 1. Background gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color.fromRGBO(252, 252, 252, 1), Color.fromRGBO(255, 255, 255, 1)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: mq.height * 0.04),
-                  Icon(Icons.lock_outline, size: 72, color: Colors.indigo),
-                  SizedBox(height: 12),
-                  Text('Welcome Back', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 24),
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email)),
-                              validator: _validateEmail,
-                            ),
-                            SizedBox(height: 12),
-                            TextFormField(
-                              controller: _passCtrl,
-                              obscureText: _obscure,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: Icon(Icons.lock),
-                                suffixIcon: IconButton(
-                                  icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                  // 2. Illustration
+                  SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: FlutterLogo(size: 120),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 3. Title + subtitle
+                  const Text(
+                    'Welcome Back',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 3, 209, 110),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Log in to continue your healthy journey',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color.fromARGB(179, 37, 37, 37)),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // 4. Card-style form
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(0, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          // Email field
+                          TextFormField(
+                            controller: _emailCtrl,
+                            validator: _validateEmail,
+                             decoration: _inputDecoration(
+                            icon: const Icon(Icons.email_outlined, color: Colors.grey),
+                            hint: 'Email',
+                              ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password field
+                          TextFormField(
+                            controller: _passCtrl,
+                            obscureText: _obscure,
+                            validator: _validatePassword,
+                            decoration: _inputDecoration(
+                              icon: const Icon(Icons.lock_outline, color: Colors.grey),
+                              hint: 'Password',
+                            ).copyWith(
+                              suffixIcon: Padding(
+                                padding: const EdgeInsetsDirectional.only(end: 16),
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.grey,
+                                  ),
                                   onPressed: () => setState(() => _obscure = !_obscure),
                                 ),
                               ),
-                              validator: _validatePassword,
                             ),
-                            SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  // Add forgot-password flow
-                                },
-                                child: Text('Forgot password?'),
+                          ),
+                            const SizedBox(height: 16),
+                            
+                          // 5. Gradient Sign In button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _loading ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ).copyWith(
+                                backgroundColor:
+                                    WidgetStateProperty.resolveWith<Color?>(
+                                  (states) {
+                                    if (states.contains(WidgetState.disabled)) {
+                                      return Colors.green[200];
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                elevation: WidgetStateProperty.all(0),
+                              ),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color.fromARGB(255, 25, 241, 136), Color.fromARGB(255, 2, 219, 114)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Container(
+                                  height: 56,
+                                  alignment: Alignment.center,
+                                  child: _loading
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Sign In',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
                               ),
                             ),
-                            if (_error != null)
-                              Padding(
-                                padding: EdgeInsets.only(top: 8),
-                                child: Text(_error!, style: TextStyle(color: Colors.red)),
-                              ),
-                            SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _loading ? null : _submit,
-                                child: _loading
-                                    ? SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : Text('Sign In'),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 6. Sign-up link
+                          GestureDetector(
+                            onTap: () => Navigator.pushNamed(context, '/register'),
+                            child: Text(
+                              'Don’t have an account? Sign up',
+                              style: TextStyle(
+                                color: const Color.fromARGB(255, 4, 4, 4),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(height: 6),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/register');
-                              },
-                              child: Text('Don\'t have an account? Sign up'),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  SizedBox(height: mq.height * 0.05),
                 ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
