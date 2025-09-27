@@ -3,9 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'login_page.dart';
-import 'register_page.dart';
-import 'home_page.dart';
+import 'pages/login_page.dart';
+import 'pages/register_page.dart';
+import 'pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +16,7 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -27,17 +27,18 @@ class MyApp extends StatelessWidget {
     final session = Supabase.instance.client.auth.currentSession;
 
     return MaterialApp(
-      title: 'Supabase Auth Demo',
-      theme: ThemeData(        
+      title: 'Nutrition Tracker',
+      theme: ThemeData(
         textTheme: GoogleFonts.nunitoTextTheme(
           Theme.of(context).textTheme,
         ),
       ),
+      home: const NutritionHomePage(),
       initialRoute: session != null ? '/home' : '/login',
       routes: {
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
-        '/home': (context) => HomePage(),
+        '/home': (context) => const NutritionHomePage(),
       },
     );
   }

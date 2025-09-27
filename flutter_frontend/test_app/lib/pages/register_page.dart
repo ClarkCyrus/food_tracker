@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -225,13 +225,13 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                             ).copyWith(
                               backgroundColor:
-                                  MaterialStateProperty.resolveWith<Color?>((states) {
-                                if (states.contains(MaterialState.disabled)) {
+                                  WidgetStateProperty.resolveWith<Color?>((states) {
+                                if (states.contains(WidgetState.disabled)) {
                                   return Colors.green[200];
                                 }
                                 return null;
                               }),
-                              elevation: MaterialStateProperty.all(0),
+                              elevation: WidgetStateProperty.all(0),
                             ),
                             child: Ink(
                               decoration: BoxDecoration(
