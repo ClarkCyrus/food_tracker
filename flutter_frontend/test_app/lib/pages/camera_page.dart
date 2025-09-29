@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../services/camera_service.dart';
-import '../widgets/framing_overlay.dart';
 import '../widgets/camera_widget.dart'; // Add this import
 
 class CameraPage extends StatefulWidget {
@@ -16,7 +15,6 @@ class CameraPage extends StatefulWidget {
 class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   late final CameraService _cameraService;
   bool _ready = false;
-  bool _processing = false;
 
   @override
   void initState() {

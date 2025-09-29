@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/home_page.dart';
+import 'pages/test.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,9 +34,9 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
       ),
-      home: const NutritionHomePage(),
-      initialRoute: session != null ? '/home' : '/login',
+      initialRoute: session != null ? '/test' : '/test',
       routes: {
+        '/test': (context) => UploadPage(),
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
         '/home': (context) => const NutritionHomePage(),
