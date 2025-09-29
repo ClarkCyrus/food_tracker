@@ -1,0 +1,4 @@
+pillow
+uvicorn
+fastapi
+pydantic

@@ -62,6 +62,14 @@ class _RegisterPageState extends State<RegisterPage> {
           .signUp(email: email, password: password);
 
       if (res.user != null) {
+        // Create profile row in Supabase
+        await Supabase.instance.client.from('profiles').insert({
+          'user_id': res.user!.id,
+          'display_name': name,
+          'first_name': name,
+          // 'avatar_url': null, // optional
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Welcome aboard, $name! 🎉')),
         );

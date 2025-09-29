@@ -7,12 +7,6 @@ import '../pages/camera_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase with your project URL and anon key
-  await Supabase.initialize(
-    url: 'https://your-project.supabase.co',
-    anonKey: 'your-anon-key',
-  );
-
   runApp(const MyApp()); 
 }
 
@@ -27,7 +21,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const NutritionHomePage(), 
+      home: const NutritionHomePage(),
     );
   }
 }
@@ -40,58 +34,22 @@ class NutritionHomePage extends StatefulWidget {
 }
 
 class _NutritionHomePageState extends State<NutritionHomePage> {
-  int _currentIndex = 1; // default to Nutrition
+  int _currentIndex = 0;
   String? _displayName;
   bool _loadingName = true;
 
-  // Sample nutrient data
-  final List<_Nutrient> _nutrients = [
-    _Nutrient(
-      icon: Icons.fitness_center,
-      name: 'Protein',
-      consumed: 60,
-      goal: 100,
-      color: Colors.redAccent,
-    ),
-    _Nutrient(
-      icon: Icons.bubble_chart,
-      name: 'Carbs',
-      consumed: 180,
-      goal: 250,
-      color: Colors.blueAccent,
-    ),
-    _Nutrient(
-      icon: Icons.opacity,
-      name: 'Fat',
-      consumed: 55,
-      goal: 80,
-      color: Colors.orangeAccent,
-    ),
-    _Nutrient(
-      icon: Icons.grass,
-      name: 'Fiber',
-      consumed: 20,
-      goal: 30,
-      color: Colors.greenAccent,
-    ),
-  ];
-
-  // Sample recent meals
-  final List<_Meal> _meals = [
-    _Meal(name: 'Chicken Salad', calories: 320, time: '7:45 AM'),
-    _Meal(name: 'Oatmeal Bowl', calories: 250, time: '10:30 AM'),
-    _Meal(name: 'Fruit Snack', calories: 87, time: '2:00 PM'),
-  ];
-
-  // Example burn goal for progress
-  final int _burnGoal = 800;
+  DateTime _selectedDate = DateTime.now();
+  Map<String, dynamic> _dailyAgg = {};
+  bool _loadingAgg = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadDailyAgg();
   }
 
+  /// Loads the user's display name from the Supabase profiles table.
   Future<void> _loadUserName() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
@@ -104,45 +62,58 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       return;
     }
 
-    // Try metadata first
-    final metadataName = user.userMetadata?['full_name'] as String?;
-    if (metadataName != null && metadataName.isNotEmpty) {
+    try {
+      // Query the profiles table for the user's display name
+      final profileRes = await supabase
+          .from('profiles')
+          .select('first_name, display_name, avatar_url')
+          .eq('user_id', user.id)
+          .single();
+
+      final first = (profileRes['first_name'] ?? '') as String;
+      final display = (profileRes['display_name'] ?? '') as String;
+      final combined = display.isNotEmpty ? display : ('$first').trim();
       setState(() {
-        _displayName = metadataName;
+        _displayName = combined.isEmpty ? (user.email ?? 'User') : combined;
         _loadingName = false;
+      });
+    } catch (e) {
+      setState(() {
+        _displayName = user.email ?? 'User';
+        _loadingName = false;
+      });
+    }
+  }
+
+  /// Loads today's nutrition intake using the custom aggregate function.
+  Future<void> _loadDailyAgg([DateTime? date]) async {
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
+    final dateStr = (date ?? DateTime.now()).toIso8601String().substring(0, 10);
+
+    if (userId == null) {
+      setState(() {
+        _loadingAgg = false;
       });
       return;
     }
 
-    // Query profiles table for richer user info
     try {
-      final profile = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (profile != null && profile is Map) {
-        final first = (profile['first_name'] ?? '') as String;
-        final last = (profile['last_name'] ?? '') as String;
-        final combined = ('$first $last').trim();
-        setState(() {
-          _displayName = combined.isEmpty ? user.email ?? 'User' : combined;
-          _loadingName = false;
-        });
-        return;
-      }
-    } catch (_) {
-      // ignore and fallback to email
+      // Use the custom RPC for daily aggregates
+      final res = await supabase.rpc('daily_nutrient_agg', params: {
+        'user_id': userId,
+        'meal_date': dateStr,
+      });
+      // Use res directly, not res.data
+      _dailyAgg = res.isNotEmpty ? res[0] : {};
+    } catch (e) {
+      _dailyAgg = {};
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load daily aggregates: $e')),
+      );
     }
-
-    setState(() {
-      _displayName = user.email ?? 'User';
-      _loadingName = false;
-    });
+    setState(() => _loadingAgg = false);
   }
-
-  int _totalConsumedCalories() => _meals.fold<int>(0, (p, m) => p + m.calories);
 
   Future<void> _openCamera(BuildContext context) async {
     try {
@@ -167,29 +138,115 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     }
   }
 
+  void _onNavTap(int idx) async {
+    if (idx == 1) {
+      // Middle button: Open camera
+      await _openCamera(context);
+      // Do not change _currentIndex, stay on home after camera
+      return;
+    }
+    setState(() => _currentIndex = idx);
+  }
+
+  Future<void> _addMealDialog() async {
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final _mealNameController = TextEditingController();
+    final _kcalController = TextEditingController();
+    final _proteinController = TextEditingController();
+    final _carbsController = TextEditingController();
+    final _fatController = TextEditingController();
+    final _fiberController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Meal Manually'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: _mealNameController,
+                decoration: const InputDecoration(labelText: 'Meal Name'),
+              ),
+              TextField(
+                controller: _kcalController,
+                decoration: const InputDecoration(labelText: 'Kcal'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _proteinController,
+                decoration: const InputDecoration(labelText: 'Protein (g)'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _carbsController,
+                decoration: const InputDecoration(labelText: 'Carbs (g)'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _fatController,
+                decoration: const InputDecoration(labelText: 'Fat (g)'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _fiberController,
+                decoration: const InputDecoration(labelText: 'Fiber (g)'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: const Text('Add'),
+            onPressed: () async {
+              final now = DateTime.now();
+              await supabase.from('nutrition_intake').insert({
+                'user_id': userId,
+                'meal_date': now.toIso8601String().substring(0, 10),
+                'meal_name': _mealNameController.text,
+                'kcal': double.tryParse(_kcalController.text) ?? 0,
+                'protein_g': double.tryParse(_proteinController.text) ?? 0,
+                'carbs_g': double.tryParse(_carbsController.text) ?? 0,
+                'fat_g': double.tryParse(_fatController.text) ?? 0,
+                'fiber_g': double.tryParse(_fiberController.text) ?? 0,
+              });
+              Navigator.pop(context);
+              await _loadDailyAgg(); // Refresh nutrients card
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final totalConsumed = _totalConsumedCalories();
-    final burned = 245; // replace with real activity data when available
+    // Today's nutrition values from Supabase aggregate
+    final totalConsumed = (_dailyAgg['kcal_sum'] ?? 0).toInt();
+    final proteinConsumed = (_dailyAgg['protein_sum'] ?? 0).toDouble();
+    final fatConsumed = (_dailyAgg['fat_sum'] ?? 0).toDouble();
+    final fiberConsumed = (_dailyAgg['fiber_sum'] ?? 0).toDouble();
 
-    // Calculate today's fat and protein from _nutrients list
-    final fatNutrient = _nutrients.firstWhere((n) => n.name == 'Fat', orElse: () => _Nutrient(icon: Icons.opacity, name: 'Fat', consumed: 0, goal: 1, color: Colors.orangeAccent));
-    final proteinNutrient = _nutrients.firstWhere((n) => n.name == 'Protein', orElse: () => _Nutrient(icon: Icons.fitness_center, name: 'Protein', consumed: 0, goal: 1, color: Colors.redAccent));
-    final fatConsumed = fatNutrient.consumed;
-    final proteinConsumed = proteinNutrient.consumed;
-
-    final double halfWidth = (MediaQuery.of(context).size.width - 32) / 2; // 16 padding each side
+    // Format today's date as "Sep 27, 2025"
+    final todayText = "${_selectedDate.day} ${_monthName(_selectedDate.month)}, ${_selectedDate.year}";
 
     return Scaffold(
-      backgroundColor: Color(0xF2F2F2),
+      backgroundColor: const Color(0xFFF2F2F2),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // Header
+              // Header with user name from Supabase profiles
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -222,24 +279,11 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
               ),
 
               const SizedBox(height: 24),
-
-              // Calore Card
-              CalorieCard(calories: 1536, onTap: () { /* navigate */ }),
-
-              const SizedBox(height: 16),
-
-              // Add a button to open the camera
-              ElevatedButton.icon(
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('Open Camera'),
-                onPressed: () => _openCamera(context),
-              ),
-
+            
               // Redesigned Today's Nutrients Card
-              // Place this inside your build method where halfWidth, totalConsumed, fatConsumed are defined.
+              // Uses today's nutrition intake from Supabase
               SizedBox(
                 height: 300,
-                width: halfWidth,
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -253,431 +297,279 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(24), 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-
-                      // Header for Intake
-                      const Text(
-                        'Intake',
-                        style: TextStyle(fontSize: 18, color: Color.fromARGB(255, 0, 0, 0)),
-                      ),
-  
-                      const SizedBox(height: 12),
-                      
-                      // Top block (Kcal) — styled the same way as the bottom Fat block
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 255, 64, 64).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
+                  padding: const EdgeInsets.all(16),
+                  child: _loadingAgg
+                      ? const Center(child: CircularProgressIndicator())
+                      : Row(
                           children: [
-                            // circular icon background
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.orangeAccent.withOpacity(0.12),
-                                shape: BoxShape.circle,
+                            // LEFT: Calories + date
+                            Expanded(
+                              flex: 5,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // header row with title and today's date (no picker)
+                                  Row(
+                                    children: [
+                                      const Text('Intake', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                                      const Spacer(),
+                                      Text(
+                                        todayText,
+                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // big calorie block
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.12), shape: BoxShape.circle),
+                                            child: Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 22),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                '$totalConsumed',
+                                                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                                              ),
+                                              const Text('Kcal', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                          Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 18),
                             ),
 
                             const SizedBox(width: 12),
 
-                            // value + unit and label
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$totalConsumed',
-                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                                ),
-                                const Text(
-                                  'Kcal',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                                ),
-                                const SizedBox(height: 4),
-                              ],
-                            ),
+                            // RIGHT: three nutrient mini-cards stacked (Protein, Fat, Fiber)
+                            Expanded(
+                              flex: 5,
+                              child: Column(
+                                children: [
+                                  // Protein
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.12), shape: BoxShape.circle),
+                                            child: Icon(Icons.fitness_center, color: Colors.redAccent, size: 18),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('${proteinConsumed.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                              const Text('Protein', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
 
-                            const Spacer(),
+                                  const SizedBox(height: 8),
 
-                            Icon(Icons.chevron_right, color: Colors.grey.shade400),
-                          ],
-                        ),
-                      ),
+                                  // Fat
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.12), shape: BoxShape.circle),
+                                            child: Icon(Icons.opacity, color: Colors.orangeAccent, size: 18),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('${fatConsumed.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                              const Text('Fat', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
 
-                      const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
 
-                      // Fat block (identical style to Kcal block)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.orangeAccent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            // circular icon background
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.orangeAccent.withOpacity(0.12),
-                                shape: BoxShape.circle,
+                                  // Fiber
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: Colors.green.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(color: Colors.green.withOpacity(0.12), shape: BoxShape.circle),
+                                            child: Icon(Icons.grass, color: Colors.green, size: 18),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('${fiberConsumed.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                              const Text('Fiber', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Icon(Icons.opacity, color: Colors.orangeAccent, size: 18),
                             ),
-
-                            const SizedBox(width: 12),
-
-                            // value + unit and label
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$fatConsumed',
-                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                                ),
-                                const Text(
-                                  'g/Fat',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                                ),
-                                const SizedBox(height: 4),
-                              ],
-                            ),
-
-                            const Spacer(),
-
-                            Icon(Icons.chevron_right, color: Colors.grey.shade400),
                           ],
                         ),
-                      ),
-
-                      const Spacer(),
-
-                    ],
-                  ),
                 ),
               ),
 
+              // Add Meal Button (below nutrients card)
+              const SizedBox(height: 16),
+              Center(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add, size: 20), // new icon
+                  label: const Text(
+                    'Add Meal Manually',
+                    style: TextStyle(color: Color.fromARGB(255, 3, 209, 110)),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 255, 255, 255), // button fill color
+                    foregroundColor: const Color.fromARGB(255, 0, 0, 0), // icon + label color
+                    shadowColor: Colors.black.withOpacity(0.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  ).copyWith(
+                    // custom overlay (pressed / splash) color
+                    overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
+                      if (states.contains(MaterialState.pressed)) return const Color(0xFF8FD7B1).withOpacity(0.18);
+                      if (states.contains(MaterialState.hovered)) return const Color(0xFF8FD7B1).withOpacity(0.08);
+                      return null;
+                    }),
+                  ),
+                  onPressed: _addMealDialog,
+                ),
+              ),
 
               const SizedBox(height: 24),
-
-              // Today's Nutrients horizontal list (nutrient cards)
-              Text(
-                "Today's Nutrients",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 180,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _nutrients.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) {
-                    final n = _nutrients[i];
-                    return _NutrientCard(nutrient: n);
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Recent Meals Section
-              const Text(
-                'Recent Meals',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Expanded(
-                child: ListView.separated(
-                  itemCount: _meals.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, idx) {
-                    final meal = _meals[idx];
-                    return _MealCard(meal: meal);
-                  },
-                ),
-              ),
-
             ],
           ),
         ),
       ),
-
-      // Bottom Navigation
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green.shade600,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            label: 'Nutrition',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center_outlined),
-            label: 'Activity',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (idx) => setState(() => _currentIndex = idx),
-      ),
-    );
-  }
-}
-
-// Data model for a nutrient
-class _Nutrient {
-  final IconData icon;
-  final String name;
-  final double consumed;
-  final double goal;
-  final Color color;
-
-  _Nutrient({
-    required this.icon,
-    required this.name,
-    required this.consumed,
-    required this.goal,
-    required this.color,
-  });
-}
-
-// Card widget for a single nutrient
-class _NutrientCard extends StatelessWidget {
-  final _Nutrient nutrient;
-
-  const _NutrientCard({required this.nutrient});
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = (nutrient.consumed / nutrient.goal).clamp(0.0, 1.0);
-    return Container(
-      width: 160,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon circle
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: nutrient.color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(nutrient.icon, color: nutrient.color, size: 28),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            nutrient.name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${nutrient.consumed.toInt()}g / ${nutrient.goal.toInt()}g',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: pct,
-            backgroundColor: Colors.grey.shade200,
-            color: nutrient.color,
-            minHeight: 6,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Data model for a meal
-class _Meal {
-  final String name;
-  final int calories;
-  final String time;
-  _Meal({
-    required this.name,
-    required this.calories,
-    required this.time,
-  });
-}
-
-// Card widget for a recent meal
-class _MealCard extends StatelessWidget {
-  final _Meal meal;
-  const _MealCard({required this.meal});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.035),
-              blurRadius: 8,
-              offset: const Offset(0, 4)),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: Colors.green.shade50,
-            child: Icon(Icons.restaurant, color: Colors.green.shade600),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  meal.name,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  meal.time,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${meal.calories} kcal',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          )
-        ],
-      ),
-    );
-  }
-}
-
-class CalorieCard extends StatelessWidget {
-  final int calories;
-  final VoidCallback? onTap;
-  final Color backgroundColor;
-  final Color iconColor;
-  final Color textColor;
-
-  const CalorieCard({
-    Key? key,
-    required this.calories,
-    this.onTap,
-    this.backgroundColor = const Color(0xFF00E58D),
-    this.iconColor = const Color(0xFFFFFFFF),
-    this.textColor = Colors.white,
-  }) : super(key: key);
-
-  String get formattedCalories {
-    // Use double quotes for the outer string so the RegExp raw string works correctly
-    return "${calories.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')} Kcal";
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+      
+      // replace your bottomNavigationBar assignment with this block
+      // simple: ClipRRect + Container to add radius and optional shadow
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        clipBehavior: Clip.none,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          height: 70,
           decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white, // nav background
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
+              BoxShadow(color: Colors.black12, blurRadius: 8),
             ],
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: backgroundColor.withOpacity(0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.local_fire_department,
-                  color: iconColor,
-                  size: 20,
-                ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color.fromARGB(255, 3, 209, 110),
+            unselectedItemColor: Colors.grey,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                label: 'Home',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  formattedCalories,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+              BottomNavigationBarItem(
+                icon: SizedBox(
+                  height: 20,
+                  width: 56,
+                  child: Center(
+                    child: Transform.translate(
+                      offset: const Offset(0, -32),
+                      child: OverflowBox(
+                        maxWidth: 80,
+                        maxHeight: 80,
+                        alignment: Alignment.topCenter,
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 3, 209, 110),
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+                label: '',
               ),
-              Icon(
-                Icons.chevron_right,
-                color: textColor.withOpacity(0.9),
-                size: 28,
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'History',
               ),
             ],
+            onTap: _onNavTap,
           ),
         ),
       ),
+
     );
   }
+
+  // Helper function for month name
+  String _monthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
 }
+
