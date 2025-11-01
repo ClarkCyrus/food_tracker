@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
+import 'dart:math' as math;
 
 import '../pages/camera_page.dart';
 import '../services/api_service.dart';
@@ -39,6 +40,48 @@ class NutritionHomePage extends StatefulWidget {
   @override
   _NutritionHomePageState createState() => _NutritionHomePageState();
 }
+
+class CircleProgressPainter extends CustomPainter {
+  final double percent;
+  final Color trackColor;
+  final Color progressColor;
+  final double strokeWidth;
+
+  CircleProgressPainter({
+    required this.percent,
+    this.trackColor = const Color(0x1FAF7A), // example
+    this.progressColor = Colors.orangeAccent,
+    this.strokeWidth = 10.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width/2, size.height/2);
+    final radius = (math.min(size.width, size.height) - strokeWidth) / 2;
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    final startAngle = -math.pi / 2; // top
+    final sweepAngle = 2 * math.pi * percent;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, false, progressPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CircleProgressPainter old) => old.percent != percent;
+}
+
 
 class _NutritionHomePageState extends State<NutritionHomePage> {
   int _currentIndex = 0;
@@ -600,6 +643,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
     // Format today's date as "Sep 27, 2025"
     final todayText = "${_selectedDate.day} ${_monthName(_selectedDate.month)}, ${_selectedDate.year}";
+    final double goalKcal = 200.0;
+    final double remaining = goalKcal - totalConsumed;
+    // complete flag or label
+
+    final bool isComplete = totalConsumed >= goalKcal; // true when eaten is equal or greater than goal
+    final String statusLabel = isComplete ? 'Complete' : 'In progress';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
@@ -681,7 +730,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                       // header row with title and today's date (no picker)
                                       Row(
                                         children: [
-                                          const Text('Intake', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                                          const Text('Tracker', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                                           const Spacer(),
                                           Text(
                                             todayText,
@@ -693,33 +742,66 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                       // big calorie block
                                       Expanded(
                                         child: Container(
+                                          width: double.infinity,
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                          decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
-                                          child: Row(
+                                          decoration: BoxDecoration(
+                                            color: Colors.orangeAccent.withOpacity(0.08),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),  
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.center, // horizontal center
                                             children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(10),
-                                                decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.12), shape: BoxShape.circle),
-                                                child: Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 22),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
+                                              const Spacer(), // push content to vertical center
+                                              // Progress circle with text
+                                              Stack(
+                                                alignment: Alignment.center,
                                                 children: [
-                                                  Text(
-                                                    '$totalConsumed',
-                                                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                                                  CustomPaint(
+                                                    size: const Size(120, 120),
+                                                    painter: CircleProgressPainter(
+                                                      percent: (totalConsumed / goalKcal).clamp(0.0, 1.0),
+                                                      trackColor: Colors.orangeAccent.withOpacity(0.12),
+                                                      progressColor: Colors.orangeAccent,
+                                                      strokeWidth: 12,
+                                                    ),
                                                   ),
-                                                  const Text('Kcal', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                                                  Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text(isComplete ? 'Completed' : '${remaining.toStringAsFixed(0)} until'),
+                                                      const Text('target', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                                    ],
+                                                  ),
                                                 ],
                                               ),
-                                              const Spacer(),
-                                              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                                              const SizedBox(height: 12),
+                                              // Bottom: small fire icon + calories
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min, // horizontal center
+                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.all(10),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.orangeAccent.withOpacity(0.12),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 16),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    '$totalConsumed Kcal',
+                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 16),
+                                                ],
+                                              ),
+                                              const Spacer(), // push content to vertical center
                                             ],
                                           ),
                                         ),
-                                      ),
+                                      ),                        
                                     ],
                                   ),
                                 ),
