@@ -1,4 +1,4 @@
-pillow
-uvicorn
-fastapi
-pydantic
+Flask
+numpy
+Pillow
+tensorflow

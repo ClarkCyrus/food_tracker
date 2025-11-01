@@ -1,0 +1,1618 @@
+{
+  "apple_pie": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "baby_back_ribs": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "baklava": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "beef_carpaccio": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "beef_tartare": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "beet_salad": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "beignets": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "bibimbap": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "bread_pudding": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "breakfast_burrito": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "bruschetta": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "caesar_salad": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "cannoli": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "caprese_salad": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "carrot_cake": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "ceviche": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "cheesecake": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "cheese_plate": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "chicken_curry": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "chicken_quesadilla": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "chicken_wings": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "chocolate_cake": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "chocolate_mousse": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "churros": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "clam_chowder": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "club_sandwich": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "crab_cakes": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "creme_brulee": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "croque_madame": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "cup_cakes": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "deviled_eggs": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "donuts": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "dumplings": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "edamame": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "eggs_benedict": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "escargots": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "falafel": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "filet_mignon": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "fish_and_chips": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "foie_gras": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "french_fries": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "french_onion_soup": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "french_toast": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "fried_calamari": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "fried_rice": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "frozen_yogurt": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "garlic_bread": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "gnocchi": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "greek_salad": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "grilled_cheese_sandwich": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "grilled_salmon": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "guacamole": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "gyoza": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "hamburger": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "hot_and_sour_soup": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "hot_dog": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "huevos_rancheros": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "hummus": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "ice_cream": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "lasagna": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "lobster_bisque": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "lobster_roll_sandwich": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "macaroni_and_cheese": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "macarons": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "miso_soup": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "mussels": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "nachos": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "omelette": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "onion_rings": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "oysters": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pad_thai": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "paella": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pancakes": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "panna_cotta": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "peking_duck": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pho": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pizza": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pork_chop": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "poutine": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "prime_rib": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "pulled_pork_sandwich": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "ramen": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "ravioli": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "red_velvet_cake": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "risotto": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "samosa": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "sashimi": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "scallops": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "seaweed_salad": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "shrimp_and_grits": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "spaghetti_bolognese": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "spaghetti_carbonara": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "spring_rolls": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "steak": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "strawberry_shortcake": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "sushi": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "tacos": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "takoyaki": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "tiramisu": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "tuna_tartare": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  },
+  "waffles": {
+    "serving_g": null,
+    "per_serving": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "per_100g": {
+      "kcal": null,
+      "protein_g": null,
+      "fat_g": null,
+      "carbs_g": null
+    },
+    "notes": "fill with verified values"
+  }
+}
