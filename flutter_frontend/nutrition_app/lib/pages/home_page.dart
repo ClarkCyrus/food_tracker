@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
+import 'package:nutrition_app/main.dart';
 import '../pages/camera_page.dart';
 import '../services/api_service.dart';
 import '../widgets/nutritional_modal.dart';
@@ -49,7 +51,7 @@ class CircleProgressPainter extends CustomPainter {
 
   CircleProgressPainter({
     required this.percent,
-    this.trackColor = const Color(0x1FAF7A), // example
+    this.trackColor = const Color.fromARGB(0, 31, 175, 122), // example
     this.progressColor = Colors.orangeAccent,
     this.strokeWidth = 10.0,
   });
@@ -88,18 +90,26 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   String? _displayName;
   bool _loadingName = true;
 
-  DateTime _selectedDate = DateTime.now();
+  final DateTime _selectedDate = DateTime.now();
   Map<String, dynamic> _dailyAgg = {};
   bool _loadingAgg = true;
 
+  // ignore: unused_field
   bool _uploading = false;
+  // ignore: unused_field
   Map<String, dynamic>? _lastResult;
+  // ignore: unused_field
   Uint8List? _lastImage;
   final ImagePicker _picker = ImagePicker();
   final double previewHeight = 200;
 
   List<Map<String, dynamic>> _foodItems = []; // add this
-  bool _loading = true;
+  // ignore: unused_field
+  bool _loadingIntakes = true;
+
+  double _goalKcal = 200.0;
+
+  final ValueNotifier<bool> _isAddPopupOpen = ValueNotifier<bool>(false);
 
 
   String defaultServerUrl() {
@@ -114,10 +124,18 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final user = supabase.auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
+    // Get today's start and end
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    
+
     final response = await supabase
         .from('food_intake')
         .select()
         .eq('user_id', user.id)
+        .gte('created_at', startOfDay.toIso8601String())
+        .lte('created_at', endOfDay.toIso8601String())
         .order('created_at', ascending: false);
 
     return response;
@@ -137,6 +155,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
+      if (!mounted) return;
       setState(() {
         _displayName = 'Guest';
         _loadingName = false;
@@ -150,16 +169,18 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
           .from('profiles')
           .select('first_name, display_name, avatar_url')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-      final first = (profileRes['first_name'] ?? '') as String;
-      final display = (profileRes['display_name'] ?? '') as String;
-      final combined = display.isNotEmpty ? display : ('$first').trim();
+      final first = (profileRes?['first_name'] ?? '') as String;
+      final display = (profileRes?['display_name'] ?? '') as String;
+      final combined = display.isNotEmpty ? display : (first).trim();
+      if (!mounted) return;
       setState(() {
         _displayName = combined.isEmpty ? (user.email ?? 'User') : combined;
         _loadingName = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _displayName = user.email ?? 'User';
         _loadingName = false;
@@ -174,6 +195,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final dateStr = (date ?? DateTime.now()).toIso8601String().substring(0, 10);
 
     if (userId == null) {
+      if (!mounted) return;
       setState(() {
         _loadingAgg = false;
       });
@@ -194,16 +216,19 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
         SnackBar(content: Text('Failed to load daily aggregates: $e')),
       );
     }
+    if (!mounted) return;
     setState(() => _loadingAgg = false);
   }
 
   Future<void> _loadFoodIntakes() async {
-    setState(() => _loading = true);
-    final supabase = Supabase.instance.client;
+    if (!mounted) return;
+    setState(() => _loadingIntakes = true);
     final res = await fetchUserFoodIntakes(); // your existing fetch function
+
+    if (!mounted) return;
     setState(() {
       _foodItems = res;
-      _loading = false;
+      _loadingIntakes = false;
     });
   }
 
@@ -259,7 +284,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
   void _onNavTap(int idx) async {
     if (idx == 1) {
-      await _openCameraAndUpload(context);
+      _showAddPopup(context);
       return;
     }
     if (idx == 2) { // assuming History is the 2nd tab
@@ -272,21 +297,19 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
-
-    String? manualImageUrl;
     Uint8List? manualImageBytes;
 
-    final _mealNameController = TextEditingController();
-    final _kcalController = TextEditingController();
-    final _proteinController = TextEditingController();
-    final _carbsController = TextEditingController();
-    final _fatController = TextEditingController();
-    final _fiberController = TextEditingController();
+    final mealNameController = TextEditingController();
+    final kcalController = TextEditingController();
+    final proteinController = TextEditingController();
+    final carbsController = TextEditingController();
+    final fatController = TextEditingController();
+    final fiberController = TextEditingController();
 
     await showDialog(
       context: context,
       builder: (context) {
-        String? manualImageUrlLocal = manualImageUrl;
+        String? manualImageUrl;
 
         return StatefulBuilder(
           builder: (context, setStateDialog) {
@@ -329,7 +352,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                           // caret and selection only
                           textSelectionTheme: TextSelectionThemeData(
                             cursorColor: Colors.green,
-                            selectionColor: Colors.green.withOpacity(0.25),
+                            selectionColor: const Color(0xFF4CAF50).withOpacity(0.25),
                             selectionHandleColor: Colors.green,
                           ),
                           // focused underline and floating label only
@@ -343,31 +366,31 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         child: Column(
                           children: [
                             TextField(
-                              controller: _mealNameController,
+                              controller: mealNameController,
                               decoration: const InputDecoration(labelText: 'Meal Name'),
                             ),
                             TextField(
-                              controller: _kcalController,
+                              controller: kcalController,
                               decoration: const InputDecoration(labelText: 'Kcal'),
                               keyboardType: TextInputType.number,
                             ),
                             TextField(
-                              controller: _proteinController,
+                              controller: proteinController,
                               decoration: const InputDecoration(labelText: 'Protein (g)'),
                               keyboardType: TextInputType.number,
                             ),
                             TextField(
-                              controller: _carbsController,
+                              controller: carbsController,
                               decoration: const InputDecoration(labelText: 'Carbs (g)'),
                               keyboardType: TextInputType.number,
                             ),
                             TextField(
-                              controller: _fatController,
+                              controller: fatController,
                               decoration: const InputDecoration(labelText: 'Fat (g)'),
                               keyboardType: TextInputType.number,
                             ),
                             TextField(
-                              controller: _fiberController,
+                              controller: fiberController,
                               decoration: const InputDecoration(labelText: 'Fiber (g)'),
                               keyboardType: TextInputType.number,
                             ),
@@ -397,7 +420,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                       return;
                     }
                     
-                    final mealName = _mealNameController.text.trim();
+                    final mealName = mealNameController.text.trim();
                     if (mealName.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -425,24 +448,26 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                     await supabase.from('food_intake').insert({
                       'user_id': userId,
                       'source': 'manual',
-                      'label': _mealNameController.text.trim(),
-                      'kcal': double.tryParse(_kcalController.text) ?? 0,
-                      'protein_g': double.tryParse(_proteinController.text) ?? 0,
-                      'carbs_g': double.tryParse(_carbsController.text) ?? 0,
-                      'fat_g': double.tryParse(_fatController.text) ?? 0,
-                      'fiber_g': double.tryParse(_fiberController.text) ?? 0,
+                      'label': mealNameController.text.trim(),
+                      'kcal': double.tryParse(kcalController.text) ?? 0,
+                      'protein_g': double.tryParse(proteinController.text) ?? 0,
+                      'carbs_g': double.tryParse(carbsController.text) ?? 0,
+                      'fat_g': double.tryParse(fatController.text) ?? 0,
+                      'fiber_g': double.tryParse(fiberController.text) ?? 0,
                       'image_url': manualImageUrl,
                     });
 
-                    Navigator.pop(context);
-                    await _loadDailyAgg();
-                    setState(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Meal added successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      await _loadDailyAgg();
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Meal added successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
                   },
                 ),
               ],
@@ -566,21 +591,6 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   }
 }
 
-  void _applyPreview(Uint8List bytes) {
-    setState(() {
-      _lastImage = bytes;
-      _lastResult = {
-        'label': 'Manual photo (preview)',
-        'confidence': 0.0,
-        'kcal': '-',
-        'protein_g': '-',
-        'fat_g': '-',
-        'carbs_g': '-',
-        'fiber_g': '-'
-      };
-    });
-  }
-
   Future<Uint8List> compressForUpload(Uint8List data) async {
     // run compression in isolate
     return await compute(_compressIsolate, data);
@@ -610,12 +620,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       await Supabase.instance.client
         .from('food_intake')
         .update({
+          'label': edited['label'],
           'kcal': edited['kcal'],
           'protein_g': edited['protein_g'],
           'fat_g': edited['fat_g'],
           'carbs_g': edited['carbs_g'],
           'fiber_g': edited['fiber_g'], 
-          'label': foodItem['label'], 
         })
         .eq('id', foodItem['id']);
       
@@ -632,6 +642,113 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     }
   }
 
+  Future<void> _showAddPopup(BuildContext context) async {
+    _isAddPopupOpen.value = true;
+    // find position of the bottom navigation bar (use the scaffold's context)
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    // compute a position roughly above the center of the bottom nav
+    // you can tweak dx/dy offsets to align precisely
+    final Size screenSize = overlay.size;
+    final Offset anchor = Offset(screenSize.width / 2, screenSize.height - 80);
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        anchor.dx - 100, // left
+        anchor.dy - 200, // top (menu appears above anchor)
+        anchor.dx + 100, // right
+        anchor.dy,       // bottom
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'add_meal',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.add, color: Color.fromARGB(255, 3, 209, 110)),
+            title: const Text('Add Meal Manually'),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'pick_photo',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.photo_library, color: Color.fromARGB(255, 3, 209, 110)),
+            title: const Text('Add Photo'),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'take_photo',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.camera_alt, color: Color.fromARGB(255, 3, 209, 110)),
+            title: const Text('Take A Photo'),
+          ),
+        ),
+      ],
+      color: const Color.fromARGB(236, 255, 255, 255),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+
+    _isAddPopupOpen.value = false;
+
+    // handle selection
+    switch (selected) {
+      case 'add_meal':
+        _addMealDialog();
+        break;
+      case 'pick_photo':
+        _pickManualPhoto(context);
+        break;
+      case 'take_photo':
+        _openCameraAndUpload(context);
+        break;
+      default:
+        break;
+    }
+  }
+
+  Widget buildCustomAppBar() {
+    return Container(
+      height: 70,
+      color: const Color.fromARGB(255, 255, 255, 255),
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            child: Center(
+              child: Image.asset(
+                'assets/app_logo2.png',
+                width: 70,
+                height: 60,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              try {
+                await Supabase.instance.client.auth.signOut();
+                navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (r) => false);
+              } catch (e) {
+                ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+                  SnackBar(content: Text('Logout failed: $e')),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Today's nutrition values from Supabase aggregate
@@ -643,25 +760,26 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
     // Format today's date as "Sep 27, 2025"
     final todayText = "${_selectedDate.day} ${_monthName(_selectedDate.month)}, ${_selectedDate.year}";
-    final double goalKcal = 200.0;
-    final double remaining = goalKcal - totalConsumed;
+    double remaining = _goalKcal - totalConsumed;
     // complete flag or label
 
-    final bool isComplete = totalConsumed >= goalKcal; // true when eaten is equal or greater than goal
-    final String statusLabel = isComplete ? 'Complete' : 'In progress';
+    final bool isComplete = totalConsumed >= _goalKcal; // true when eaten is equal or greater than goal
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color(0xFFFFFFFF),
       body: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              padding: const EdgeInsets.only(left: 16, right:16, top: 0, bottom: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with user name from Supabase profiles
-                  Row(
+                buildCustomAppBar(),
+                // Header with user name from Supabase profiles
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4), // adjust as needed
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
@@ -685,20 +803,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                           ),
                         ],
                       ),
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.grey.shade200,
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                          size: 28,
-                        ),
-                      ),
                     ],
                   ),
+                ),
 
                   const SizedBox(height: 24),
-                
+                  
                   // Redesigned Today's Nutrients Card
                   // Uses today's nutrition intake from Supabase
                   SizedBox(
@@ -707,12 +817,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20),   
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
+                            color: const Color.fromRGBO(0, 0, 0, 0.15),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -730,7 +840,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                       // header row with title and today's date (no picker)
                                       Row(
                                         children: [
-                                          const Text('Tracker', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                                          const Text('Stats', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                                           const Spacer(),
                                           Text(
                                             todayText,
@@ -759,7 +869,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   CustomPaint(
                                                     size: const Size(120, 120),
                                                     painter: CircleProgressPainter(
-                                                      percent: (totalConsumed / goalKcal).clamp(0.0, 1.0),
+                                                      percent: (totalConsumed / _goalKcal).clamp(0.0, 1.0),
                                                       trackColor: Colors.orangeAccent.withOpacity(0.12),
                                                       progressColor: Colors.orangeAccent,
                                                       strokeWidth: 12,
@@ -768,6 +878,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   Column(
                                                     mainAxisSize: MainAxisSize.min,
                                                     children: [
+                                                      Text('$_goalKcal', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                       Text(isComplete ? 'Completed' : '${remaining.toStringAsFixed(0)} until'),
                                                       const Text('target', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                     ],
@@ -777,7 +888,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                               const SizedBox(height: 12),
                                               // Bottom: small fire icon + calories
                                               Row(
-                                                mainAxisSize: MainAxisSize.min, // horizontal center
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 crossAxisAlignment: CrossAxisAlignment.center,
                                                 children: [
                                                   Container(
@@ -786,15 +897,79 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                       color: Colors.orangeAccent.withOpacity(0.12),
                                                       shape: BoxShape.circle,
                                                     ),
-                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 16),
+                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 14),
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
                                                     '$totalConsumed Kcal',
-                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                                   ),
-                                                  const SizedBox(width: 6),
-                                                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 16),
+                                                  // inside build where you currently have the IconButton
+                                                   GestureDetector(
+                                                    onTap: () async {
+                                                      // your dialog logic here
+                                                      final tempInitial = _goalKcal;
+                                                      final TextEditingController controller =
+                                                          TextEditingController(text: tempInitial?.toInt().toString());
+                                                      final result = await showDialog<double>(
+                                                        context: context,
+                                                        builder: (ctx) {
+                                                          double? temp = tempInitial;
+                                                          return StatefulBuilder(builder: (ctx, setDialogState) {
+                                                            return Theme(
+                                                              data: Theme.of(ctx).copyWith(
+                                                                textSelectionTheme: TextSelectionThemeData(
+                                                                  cursorColor: Colors.green,
+                                                                  selectionColor: const Color(0x404CAF50),
+                                                                  selectionHandleColor: Colors.green,
+                                                                ),
+                                                                inputDecorationTheme: const InputDecorationTheme(
+                                                                  focusedBorder: UnderlineInputBorder(
+                                                                    borderSide: BorderSide(color: Colors.green),
+                                                                  ),
+                                                                  floatingLabelStyle: TextStyle(color: Colors.green),
+                                                                ),
+                                                              ),
+                                                              child: AlertDialog(
+                                                                title: const Text('Adjust Goal Kcal'),
+                                                                content: TextField(
+                                                                  keyboardType: TextInputType.number,
+                                                                  controller: controller,
+                                                                  onChanged: (v) => setDialogState(() => temp = double.tryParse(v)),
+                                                                  autofocus: true,
+                                                                  decoration: const InputDecoration(labelText: 'Kcal'),
+                                                                ),
+                                                                actions: [
+                                                                  TextButton(
+                                                                    onPressed: () => Navigator.of(ctx).pop(),
+                                                                    style: TextButton.styleFrom(foregroundColor: Colors.green),
+                                                                    child: const Text('Cancel'),
+                                                                  ),
+                                                                  TextButton(
+                                                                    onPressed: () {
+                                                                      if (temp == null || temp! <= 0) return;
+                                                                      Navigator.of(ctx).pop(temp);
+                                                                    },
+                                                                    style: TextButton.styleFrom(foregroundColor: Colors.green),
+                                                                    child: const Text('Save'),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          });
+                                                        },
+                                                      );
+                                                      if (result != null && mounted) {
+                                                        setState(() => _goalKcal = result);
+                                                      }
+                                                    },
+                                                    child: Icon(
+                                                      Icons.chevron_right,
+                                                      color: Colors.grey.shade400,
+                                                      size: 16,
+                                                    ),
+                                                  ),
+
                                                 ],
                                               ),
                                               const Spacer(), // push content to vertical center
@@ -934,6 +1109,20 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                     ),
                   ),
 
+                  const SizedBox(height: 14),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4), // adjust value as needed
+                    child: Text(
+                      'Today\'s Meals',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 4, 4, 4),
+                      ),
+                    ),
+                  ),
+                  
                   FutureBuilder<List<Map<String, dynamic>>>(
                     future: fetchUserFoodIntakes(),
                     builder: (context, snapshot) {
@@ -947,8 +1136,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                       final items = snapshot.data ?? [];
                       if (items.isEmpty) {
                         return const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text('No food intake records found'),
+                          padding: EdgeInsets.all(4),
+                          child: Text('No food eaten today. Tap the + button to add some!'),
                         );
                       }
 
@@ -974,6 +1163,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                 child: Card(
                                   color: const Color.fromARGB(255, 255, 255, 255),
                                   margin: const EdgeInsets.symmetric(vertical: 12),
+                                  elevation: 4, //  Adjust for stronger or softer shadow
+                                  shadowColor: const Color.fromRGBO(0, 0, 0, 0.55), //  softer, diffused shadow                         
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Row(
@@ -1018,65 +1209,76 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
+                                                  Text(
+                                                    item['created_at'] != null
+                                                      ? DateFormat('hh:mm a').format(DateTime.parse(item['created_at']).toLocal())
+                                                      : '',
+                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                  ),
                                                   // remove button
-                                                  IconButton(
-                                                    icon: const Icon(Icons.close, size: 18, color: Color.fromARGB(255, 186, 186, 186)),
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    onPressed: () async {
-                                                      final confirm = await showDialog<bool>(
-                                                        context: context,
-                                                        builder: (_) => AlertDialog(
-                                                          title: const Text('Remove Item', style: TextStyle(color: Colors.red)),
-                                                          content: Text.rich(
-                                                            TextSpan(
-                                                              text: 'This action cannot be undone!\nAre you sure you want to remove ',
-                                                              children: [                                 
-                                                                TextSpan(text: "${item['label'] ?? 'this food'}", style: const TextStyle(color: Color.fromARGB(255, 0, 0, 0))),
-                                                                const TextSpan(text: '?'),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 4, right: 0), // adjust value if needed
+                                                      child :IconButton(
+                                                        icon: const Icon(Icons.close, size: 18, color: Color.fromARGB(255, 186, 186, 186)),
+                                                        padding: EdgeInsets.zero,
+                                                        constraints: const BoxConstraints(),
+                                                        onPressed: () async {
+                                                          final confirm = await showDialog<bool>(
+                                                            context: context,
+                                                            builder: (_) => AlertDialog(
+                                                              title: const Text('Remove Item', style: TextStyle(color: Colors.red)),
+                                                              content: Text.rich(
+                                                                TextSpan(
+                                                                  text: 'This action cannot be undone!\nAre you sure you want to remove ',
+                                                                  children: [                                 
+                                                                    TextSpan(text: "${item['label'] ?? 'this food'}", style: const TextStyle(color: Color.fromARGB(255, 0, 0, 0))),
+                                                                    const TextSpan(text: '?'),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed: () => Navigator.pop(context, false), 
+                                                                  style: TextButton.styleFrom(foregroundColor: Colors.green),
+                                                                  child: const Text('Cancel')
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed: () => Navigator.pop(context, true), 
+                                                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                                  child: const Text('Remove')
+                                                                ),
                                                               ],
-                                                            ),
                                                           ),
-                                                          actions: [
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(context, false), 
-                                                              style: TextButton.styleFrom(foregroundColor: Colors.green),
-                                                              child: const Text('Cancel')
-                                                            ),
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(context, true), 
-                                                              style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                              child: const Text('Remove')
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
+                                                        );
 
-                                                      if (confirm == true) {
-                                                        await Supabase.instance.client
-                                                            .from('food_intake')
-                                                            .delete()
-                                                            .eq('id', item['id']);
-                                                          
-                                                        await _loadDailyAgg();
-                                                        setState(() {});
+                                                        if (confirm == true) {
+                                                          await Supabase.instance.client
+                                                              .from('food_intake')
+                                                              .delete()
+                                                              .eq('id', item['id']);
+                                                            
+                                                          await _loadDailyAgg();
+                                                          setState(() {});
 
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(
-                                                            const SnackBar(
-                                                              content: Text('Item removed successfully'),
-                                                              backgroundColor: Colors.red,
-                                                              behavior: SnackBarBehavior.floating,
-                                                            ),
-                                                          );
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text('Item removed successfully'),
+                                                                backgroundColor: Colors.red,
+                                                                behavior: SnackBarBehavior.floating,
+                                                              ),
+                                                            );
+                                                          }
+                                                          setState(() {});
                                                         }
-                                                        setState(() {});
-                                                      }
-                                                    },
+                                                      },
+                                                    ),
                                                   ),
                                                 ],
                                               ),
+
                                               const SizedBox(height: 8),
+
                                               Text(
                                                 '${item['kcal'] ?? '0'} Calories',
                                                 style: const TextStyle(
@@ -1123,7 +1325,15 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                         ),
                                                       ],
                                                     ),
-                                                  ),
+                                                  ),                                              
+                                                ],
+                                              ),
+                                              
+                                              const SizedBox(height: 4),
+
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [                                               
                                                   Expanded(
                                                     child: Row(
                                                       children: [
@@ -1164,6 +1374,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   ),
                                                 ],
                                               ),
+
                                             ],
                                           ),
                                         ),
@@ -1177,58 +1388,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         },
                       );
                     },
-                  ),
-
-                  // Add Meal Button (below nutrients card)
-                  const SizedBox(height: 16),
-                  Center(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.add, size: 20), // new icon
-                      label: const Text(
-                        'Add Meal Manually',
-                        style: TextStyle(color: Color.fromARGB(255, 3, 209, 110)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 255, 255, 255), // button fill color
-                        foregroundColor: const Color.fromARGB(255, 0, 0, 0), // icon + label color
-                        shadowColor: Colors.black.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      ).copyWith(
-                        // custom overlay (pressed / splash) color
-                        overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-                          if (states.contains(MaterialState.pressed)) return const Color(0xFF8FD7B1).withOpacity(0.18);
-                          if (states.contains(MaterialState.hovered)) return const Color(0xFF8FD7B1).withOpacity(0.08);
-                          return null;
-                        }),
-                      ),
-                      onPressed: _addMealDialog,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),            
-                  Center(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.photo_library, size: 20),
-                      label: const Text(
-                        'Add Photo (Manual)',
-                        style: TextStyle(color: Color.fromARGB(255, 3, 209, 110)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        shadowColor: Colors.black.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      ).copyWith(
-                        overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-                          if (states.contains(MaterialState.pressed)) return const Color(0xFF8FD7B1).withOpacity(0.18);
-                          if (states.contains(MaterialState.hovered)) return const Color(0xFF8FD7B1).withOpacity(0.08);
-                          return null;
-                        }),
-                      ),
-                      onPressed: () => _pickManualPhoto(context),
-                    ),
-                  ),
-
+                  ),      
                 ],
               ),
             ),
@@ -1238,8 +1398,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       // simple: ClipRRect + Container to add radius and optional shadow
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(50),
+          topRight: Radius.circular(50),
         ),
         clipBehavior: Clip.none,
         child: Container(
@@ -1247,56 +1407,66 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
           decoration: BoxDecoration(
             color: Colors.white, // nav background
             boxShadow: [
-              BoxShadow(color: Colors.black12, blurRadius: 8),
+              BoxShadow(color: const Color.fromARGB(31, 17, 17, 17), blurRadius: 8),
             ],
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+              topLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
             ),
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: const Color.fromARGB(255, 3, 209, 110),
+            selectedItemColor:  Colors.grey,
             unselectedItemColor: Colors.grey,
+            backgroundColor: const Color.fromARGB(255, 249, 249, 249),
             showSelectedLabels: true,
             showUnselectedLabels: true,
             items: [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
+                icon: Icon(Icons.home_outlined, color: const Color.fromARGB(255, 3, 209, 110),),
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: SizedBox(
-                  height: 20,
-                  width: 56,
-                  child: Center(
-                    child: Transform.translate(
-                      offset: const Offset(0, -32),
-                      child: OverflowBox(
-                        maxWidth: 80,
-                        maxHeight: 80,
-                        alignment: Alignment.topCenter,
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 3, 209, 110),
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
-                        ),
+               icon: SizedBox(
+                height: 20,
+                width: 56,
+                child: Center(
+                  child: Transform.translate(
+                    offset: const Offset(0, -32),
+                    child: OverflowBox(
+                      maxWidth: 80,
+                      maxHeight: 80,
+                      alignment: Alignment.topCenter,
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _isAddPopupOpen,
+                        builder: (context, isOpen, child) {
+                          return Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 3, 209, 110),
+                              shape: BoxShape.circle,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 6,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              isOpen ? Icons.close : Icons.add,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
                 ),
+              ),
                 label: '',
               ),
               BottomNavigationBarItem(

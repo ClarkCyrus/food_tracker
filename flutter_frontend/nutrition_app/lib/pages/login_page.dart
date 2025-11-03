@@ -139,7 +139,12 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(
                     height: 200,
                     child: Center(
-                      child: FlutterLogo(size: 120),
+                      child: Image.asset(
+                        'assets/app_logo.png',
+                        width: 240,
+                        height: 240,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
 
@@ -152,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 3, 209, 110),
+                      color: Color(0xFF03D16E),
                     ),
                   ),
                   const SizedBox(height: 8),

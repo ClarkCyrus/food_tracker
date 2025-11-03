@@ -128,11 +128,17 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Illustration placeholder
-                const SizedBox(
-                  height: 200,
-                  child: Center(child: FlutterLogo(size: 120)),
-                ),
-
+                SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/app_logo.png',
+                        width: 240,
+                        height: 240,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24),
 
                 // Title & subtitle

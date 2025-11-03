@@ -1,11 +1,10 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 Future<Map<String, dynamic>?> showEditNutritionModal({
   required BuildContext context,
   Map<String, dynamic>? initial,
   String? imageUrl,
-  double imageHeight = 300,   // visible image height used in Home
+  double imageHeight = 220,   // visible image height used in Home
   double overlap = 16,        // how much the image should overflow under the rounded sheet=
 }) {
   final media = MediaQuery.of(context);
@@ -99,12 +98,14 @@ class _EditNutritionContent extends StatefulWidget {
 }
 
 class _EditNutritionContentState extends State<_EditNutritionContent> {
+  late final TextEditingController labelCtrl;
   late final TextEditingController kcalCtrl;
   late final TextEditingController proteinCtrl;
   late final TextEditingController fatCtrl;
   late final TextEditingController carbsCtrl;
   late final TextEditingController fiberCtrl;
 
+  final labelFocus = FocusNode();
   final kcalFocus = FocusNode();
   final proteinFocus = FocusNode();
   final fatFocus = FocusNode();
@@ -112,6 +113,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
   final fiberFocus = FocusNode();
 
   final edits = <String, bool>{
+    'label': false,
     'kcal': false,
     'protein': false,
     'fat': false,
@@ -122,6 +124,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
   @override
   void initState() {
     super.initState();
+    labelCtrl = TextEditingController( text: widget.initial?['label'] != null ? _titleCaseLabel(widget.initial!['label'].toString()) : '');
     kcalCtrl = TextEditingController(text: widget.initial?['kcal']?.toString() ?? '0');
     proteinCtrl = TextEditingController(text: widget.initial?['protein_g']?.toString() ?? '0');
     fatCtrl = TextEditingController(text: widget.initial?['fat_g']?.toString() ?? '0');
@@ -146,11 +149,13 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
 
   @override
   void dispose() {
+    labelCtrl.dispose();
     kcalCtrl.dispose();
     proteinCtrl.dispose();
     fatCtrl.dispose();
     carbsCtrl.dispose();
     fiberCtrl.dispose();
+    labelFocus.dispose();
     kcalFocus.dispose();
     proteinFocus.dispose();
     fatFocus.dispose();
@@ -185,35 +190,68 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 0),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Text(
-                        _titleCaseLabel(widget.initial?['label']?.toString() ?? 'unknown'),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
+                      child: edits['label'] == true
+                          ? TextField(
+                              controller: labelCtrl,
+                              focusNode: labelFocus,
+                              autofocus: true,
+                              textAlign: TextAlign.start,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                border: InputBorder.none,
+                              ),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              onSubmitted: (_) => setState(() => edits['label'] = false),
+                            )
+                          : Text(
+                              _titleCaseLabel(
+                                labelCtrl.text.isNotEmpty
+                                    ? labelCtrl.text
+                                    : _titleCaseLabel(widget.initial?['label']?.toString() ?? 'Unknown'),
+                              ),
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                     ),
+                    IconButton(
+                      icon: Icon(
+                        edits['label'] == true ? Icons.check : Icons.edit,
+                        size: 20
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          edits['label'] = !(edits['label'] ?? false);
+                        });
+                      },
+                    ),
+
                   ],
                 ),
               ),
+
               const SizedBox(height: 12),
               const Text('Calories', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               _field(id: 'kcal', label: 'kcal', controller: kcalCtrl, focusNode: kcalFocus),
               const SizedBox(height: 20),
               const Text('Macronutrients', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(child: _field(id: 'carbs', label: 'Carbs (g)', controller: carbsCtrl, focusNode: carbsFocus)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 28),
                   Expanded(child: _field(id: 'protein', label: 'Protein (g)', controller: proteinCtrl, focusNode: proteinFocus)),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(child: _field(id: 'fat', label: 'Fat (g)', controller: fatCtrl, focusNode: fatFocus)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 28),
                   Expanded(child: _field(id: 'fiber', label: 'Fiber (g)', controller: fiberCtrl, focusNode: fiberFocus)),
                 ],
               ),
@@ -223,7 +261,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
               SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal:0, vertical: 10),
                   child: SizedBox(
                     height: 56,
                     child: Row(
@@ -252,6 +290,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
                           child: ElevatedButton(
                             onPressed: () {
                               final result = <String, dynamic>{
+                                'label': normalize(labelCtrl.text),
                                 'kcal': normalize(kcalCtrl.text),
                                 'protein_g': normalize(proteinCtrl.text),
                                 'fat_g': normalize(fatCtrl.text),

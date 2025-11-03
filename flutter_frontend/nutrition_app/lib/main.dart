@@ -9,6 +9,8 @@ import 'pages/home_page.dart';
 import 'pages/history_page.dart';
 import 'pages/test.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/.env');
@@ -18,31 +20,79 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  // Register an auth state change listener to force-login when there is no user
+  Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+    final session = event.session;
+    final user = session?.user;
+    // If user is null (signed out), navigate to login and clear stack
+    if (user == null) {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (r) => false);
+    } else {
+      // Optional: when user signs in, navigate to home
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (r) => false);
+    }
+  });
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+    final user = Supabase.instance.client.auth.currentUser;
+    const protected = ['/home', '/history', '/test'];
+
+    // If route requires auth but there's no user, send to LoginPage
+    if (protected.contains(settings.name) && user == null) {
+      return MaterialPageRoute(builder: (_) => const LoginPage(), settings: settings);
+    }
+
+    switch (settings.name) {
+      case '/login':
+        return MaterialPageRoute(builder: (_) => const LoginPage(), settings: settings);
+      case '/register':
+        return MaterialPageRoute(builder: (_) => const RegisterPage(), settings: settings);
+      case '/home':
+        return MaterialPageRoute(builder: (_) => const NutritionHomePage(), settings: settings);
+      case '/history':
+        return MaterialPageRoute(builder: (_) => const FoodHistoryPage(), settings: settings);
+      case '/test':
+        return MaterialPageRoute(builder: (_) => const TestApp(), settings: settings);
+      default:
+        // Fallback: if authenticated go home, else login
+        return MaterialPageRoute(
+            builder: (_) => user == null ? const LoginPage() : const NutritionHomePage(),
+            settings: settings);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
+    final initialRoute =
+      Supabase.instance.client.auth.currentUser == null ? '/login' : '/home';
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Nutrition Tracker',
       theme: ThemeData(
         textTheme: GoogleFonts.nunitoTextTheme(
           Theme.of(context).textTheme,
         ),
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: Color.fromARGB(255, 3, 209, 110),
+        ),
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.green,        // cursor in text fields
+          selectionColor: Colors.greenAccent, // text selection highlight
+          selectionHandleColor: Colors.green, // handles for selection
+        ),
       ),
-      initialRoute: session != null ? '/home' : '/login',
-      routes: {
-        '/test': (context) => UploadPage(),
-        '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
-        '/home': (context) => const NutritionHomePage(),
-        '/history': (context) => const FoodHistoryPage(),
-      },
+      initialRoute: initialRoute,
+      onGenerateRoute: (_onGenerateRoute),
     );
   }
 }
