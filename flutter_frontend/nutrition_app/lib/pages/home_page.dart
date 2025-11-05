@@ -87,14 +87,16 @@ class CircleProgressPainter extends CustomPainter {
 
 class _NutritionHomePageState extends State<NutritionHomePage> {
   int _currentIndex = 0;
+  // Load name
   String? _displayName;
   bool _loadingName = true;
-
+  // Load time
   final DateTime _selectedDate = DateTime.now();
+  // Load daily
   Map<String, dynamic> _dailyAgg = {};
+  Map<String, dynamic>? goals; 
   bool _loadingAgg = true;
-
-  // ignore: unused_field
+  // ignore: unused_field image
   bool _uploading = false;
   // ignore: unused_field
   Map<String, dynamic>? _lastResult;
@@ -102,15 +104,14 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   Uint8List? _lastImage;
   final ImagePicker _picker = ImagePicker();
   final double previewHeight = 200;
-
   List<Map<String, dynamic>> _foodItems = []; // add this
-  // ignore: unused_field
+  // ignore: unused_field intake loading
   bool _loadingIntakes = true;
-
-  double _goalKcal = 200.0;
-
+  // ignore: unused_field  meal l oading
   final ValueNotifier<bool> _isAddPopupOpen = ValueNotifier<bool>(false);
-
+  bool _isAddingMeal = false;
+  // ignore: unused_field goals
+  double _kcalGoal = 200; // default, can be updated
 
   String defaultServerUrl() {
     if (kIsWeb) return 'http://localhost:8000'; // web developer machine
@@ -129,7 +130,6 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
     
-
     final response = await supabase
         .from('food_intake')
         .select()
@@ -140,6 +140,20 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
     return response;
   }
+  
+  Future<Map<String, dynamic>?> fetchUserGoals() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return null;
+
+    final response = await supabase
+        .from('user_goals')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    return response;
+  }
 
   @override
   void initState() {
@@ -147,6 +161,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     _loadUserName();
     _loadFoodIntakes();
     _loadDailyAgg();
+    _loadGoals();
   }
 
   /// Loads the user's display name from the Supabase profiles table.
@@ -223,7 +238,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   Future<void> _loadFoodIntakes() async {
     if (!mounted) return;
     setState(() => _loadingIntakes = true);
-    final res = await fetchUserFoodIntakes(); // your existing fetch function
+    final res = await fetchUserFoodIntakes(); 
 
     if (!mounted) return;
     setState(() {
@@ -232,53 +247,79 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     });
   }
 
-  Future<void> _openCameraAndUpload(BuildContext context) async {
-    
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No camera available')));
-        return;
-      }
-      final firstCamera = cameras.first;
+  Future<void> _loadGoals () async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
 
-      // open camera and wait for bytes from CameraPage
-      final Uint8List? bytes = await Navigator.push<Uint8List>(
-        context,
-        MaterialPageRoute(builder: (_) => CameraPage(camera: firstCamera)),
-      );
+    final response = await Supabase.instance.client
+        .from('user_goals')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle(); // returns null if no row exists
 
-      if (bytes == null) return; // user cancelled
+    final goals = response;
+    if (goals != null && mounted) {
+      setState(() {
+        _kcalGoal = (goals['kcal_goal'] ?? 200).toDouble();
+        /* _proteinGoal = (goals['protein_goal'] ?? 120).toDouble();
+        _fatGoal = (goals['fat_goal'] ?? 70).toDouble();
+        _fiberGoal = (goals['fiber_goal'] ?? 30).toDouble();
+        _carbsGoal = (goals['carbs_goal'] ?? 250).toDouble(); */
+      });
+    }
+}
+  
+  Future<void> _pickCameraPhoto(BuildContext context) async {
+    final bytes = await Navigator.of(context).push<Uint8List>(
+      MaterialPageRoute(builder: (_) => const CameraCapturePage()),
+    );
 
-      setState(() => _uploading = true);
+    if (bytes != null) {
+      setState(() => _lastImage = bytes);
 
+      // --- Do your upload and server logic here ---
       try {
-        // adjust this depending on environment:
-        // Android emulator: 'http://10.0.2.2:8000'
-        // iOS simulator: 'http://localhost:8000'
-        // Physical device: 'http://<YOUR_PC_LAN_IP>:8000' and run Flask with host="0.0.0.0"
         final serverUrl = defaultServerUrl();
-
-        final processed = await compressForUpload(bytes);
-
         final result = await uploadImageToServer(
-          imageBytes: processed,
+          imageBytes: bytes,
           serverBaseUrl: serverUrl,
           multiplier: 1.0,
-        ).timeout(const Duration(seconds: 30));
+        );
 
-        if (!mounted) return;
-        setState(() {
-          _lastResult = result;
-          _lastImage = bytes;
+        final supabase = Supabase.instance.client;
+        final user = supabase.auth.currentUser!;
+        final storage = supabase.storage.from('food-images');
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final filePath = 'user_${user.id}/$fileName';
+
+        await storage.uploadBinary(filePath, bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'));
+
+        await supabase.from('food_intake').insert({
+          'user_id': user.id,
+          'source': 'model',
+          'label': result['label'],
+          'confidence': result['confidence'],
+          'kcal': result['kcal'],
+          'protein_g': result['protein_g'],
+          'fat_g': result['fat_g'],
+          'carbs_g': result['carbs_g'],
+          'fiber_g': result['fiber_g'],
+          'image_url': filePath,
         });
+
+        setState(() => _lastResult = result);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Food added successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-      } finally {
-        if (mounted) setState(() => _uploading = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Camera error: $e')));
     }
   }
 
@@ -294,9 +335,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   }
 
   Future<void> _addMealDialog() async {
+      if (_isAddingMeal) return; // prevent multiple dialogs
+    _isAddingMeal = true;
+
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) { _isAddingMeal = false; return; } 
     Uint8List? manualImageBytes;
 
     final mealNameController = TextEditingController();
@@ -306,176 +350,180 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     final fatController = TextEditingController();
     final fiberController = TextEditingController();
 
-    await showDialog(
-      context: context,
-      builder: (context) {
-        String? manualImageUrl;
+    try {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          String? manualImageUrl;
 
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Add Meal Manually'),
-              content: SingleChildScrollView(
-                  child: Column(
-                    children: [    
-                      GestureDetector(
-                        onTap: () async {
-                          final res = await FilePicker.platform.pickFiles(
-                            type: FileType.image,
-                            withData: true,
-                          );
-                          if (res != null && res.files.isNotEmpty) {
-                            setStateDialog(() {
-                              manualImageBytes = res.files.first.bytes; // local preview
-                            });
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: manualImageBytes == null
-                              ? const Text('Tap to upload meal photo')
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.memory(manualImageBytes!, fit: BoxFit.cover),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          // caret and selection only
-                          textSelectionTheme: TextSelectionThemeData(
-                            cursorColor: Colors.green,
-                            selectionColor: const Color(0xFF4CAF50).withOpacity(0.25),
-                            selectionHandleColor: Colors.green,
-                          ),
-                          // focused underline and floating label only
-                          inputDecorationTheme: InputDecorationTheme(
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.green),
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('Add Meal Manually'),
+                content: SingleChildScrollView(
+                    child: Column(
+                      children: [    
+                        GestureDetector(
+                          onTap: () async {
+                            final res = await FilePicker.platform.pickFiles(
+                              type: FileType.image,
+                              withData: true,
+                            );
+                            if (res != null && res.files.isNotEmpty) {
+                              setStateDialog(() {
+                                manualImageBytes = res.files.first.bytes; // local preview
+                              });
+                            }
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            floatingLabelStyle: TextStyle(color: Colors.green),
+                            alignment: Alignment.center,
+                            child: manualImageBytes == null
+                                ? const Text('Tap to upload meal photo')
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.memory(manualImageBytes!, fit: BoxFit.cover),
+                                  ),
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            TextField(
-                              controller: mealNameController,
-                              decoration: const InputDecoration(labelText: 'Meal Name'),
+                        const SizedBox(height: 12),
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            // caret and selection only
+                            textSelectionTheme: TextSelectionThemeData(
+                              cursorColor: Colors.green,
+                              selectionColor: const Color(0xFF4CAF50).withOpacity(0.25),
+                              selectionHandleColor: Colors.green,
                             ),
-                            TextField(
-                              controller: kcalController,
-                              decoration: const InputDecoration(labelText: 'Kcal'),
-                              keyboardType: TextInputType.number,
+                            // focused underline and floating label only
+                            inputDecorationTheme: InputDecorationTheme(
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              floatingLabelStyle: TextStyle(color: Colors.green),
                             ),
-                            TextField(
-                              controller: proteinController,
-                              decoration: const InputDecoration(labelText: 'Protein (g)'),
-                              keyboardType: TextInputType.number,
-                            ),
-                            TextField(
-                              controller: carbsController,
-                              decoration: const InputDecoration(labelText: 'Carbs (g)'),
-                              keyboardType: TextInputType.number,
-                            ),
-                            TextField(
-                              controller: fatController,
-                              decoration: const InputDecoration(labelText: 'Fat (g)'),
-                              keyboardType: TextInputType.number,
-                            ),
-                            TextField(
-                              controller: fiberController,
-                              decoration: const InputDecoration(labelText: 'Fiber (g)'),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
+                          ),
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: mealNameController,
+                                decoration: const InputDecoration(labelText: 'Meal Name'),
+                              ),
+                              TextField(
+                                controller: kcalController,
+                                decoration: const InputDecoration(labelText: 'Kcal'),
+                                keyboardType: TextInputType.number,
+                              ),
+                              TextField(
+                                controller: proteinController,
+                                decoration: const InputDecoration(labelText: 'Protein (g)'),
+                                keyboardType: TextInputType.number,
+                              ),
+                              TextField(
+                                controller: carbsController,
+                                decoration: const InputDecoration(labelText: 'Carbs (g)'),
+                                keyboardType: TextInputType.number,
+                              ),
+                              TextField(
+                                controller: fatController,
+                                decoration: const InputDecoration(labelText: 'Fat (g)'),
+                                keyboardType: TextInputType.number,
+                              ),
+                              TextField(
+                                controller: fiberController,
+                                decoration: const InputDecoration(labelText: 'Fiber (g)'),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
                   ),
-                ),
-              actions: [
-                TextButton(
-                  style: ElevatedButton.styleFrom(foregroundColor: Colors.green),
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                TextButton(
-                  style: ElevatedButton.styleFrom(foregroundColor: Colors.green),
-                  child: const Text('Add'),
-                  onPressed: () async {
-                    if (manualImageBytes == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please select an image'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-                    
-                    final mealName = mealNameController.text.trim();
-                    if (mealName.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a meal name'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
+                actions: [
+                  TextButton(
+                    style: ElevatedButton.styleFrom(foregroundColor: Colors.green),
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  TextButton(
+                    style: ElevatedButton.styleFrom(foregroundColor: Colors.green),
+                    child: const Text('Add'),
+                    onPressed: () async {
+                      if (manualImageBytes == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please select an image'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      final mealName = mealNameController.text.trim();
+                      if (mealName.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a meal name'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
 
-                    // Upload image to Supabase
-                    manualImageUrl = await _uploadThumbnailBytes(manualImageBytes!);
+                      // Upload image to Supabase
+                      manualImageUrl = await _uploadThumbnailBytes(manualImageBytes!);
 
-                    if (manualImageUrl == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Image upload failed'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
+                      if (manualImageUrl == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Image upload failed'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
 
-                    // Then insert into DB
-                    await supabase.from('food_intake').insert({
-                      'user_id': userId,
-                      'source': 'manual',
-                      'label': mealNameController.text.trim(),
-                      'kcal': double.tryParse(kcalController.text) ?? 0,
-                      'protein_g': double.tryParse(proteinController.text) ?? 0,
-                      'carbs_g': double.tryParse(carbsController.text) ?? 0,
-                      'fat_g': double.tryParse(fatController.text) ?? 0,
-                      'fiber_g': double.tryParse(fiberController.text) ?? 0,
-                      'image_url': manualImageUrl,
-                    });
+                      // Then insert into DB
+                      await supabase.from('food_intake').insert({
+                        'user_id': userId,
+                        'source': 'manual',
+                        'label': mealNameController.text.trim(),
+                        'kcal': double.tryParse(kcalController.text) ?? 0,
+                        'protein_g': double.tryParse(proteinController.text) ?? 0,
+                        'carbs_g': double.tryParse(carbsController.text) ?? 0,
+                        'fat_g': double.tryParse(fatController.text) ?? 0,
+                        'fiber_g': double.tryParse(fiberController.text) ?? 0,
+                        'image_url': manualImageUrl,
+                      });
 
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      await _loadDailyAgg();
-                      setState(() {});
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Meal added successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },    
-    );
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        await _loadDailyAgg();
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Meal added successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },    
+      );
+    } finally {
+      _isAddingMeal = false;
+    }
   }
   
   Future<void> _pickManualPhoto(BuildContext context) async {
@@ -704,10 +752,33 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
         _pickManualPhoto(context);
         break;
       case 'take_photo':
-        _openCameraAndUpload(context);
+        _pickCameraPhoto(context);
         break;
       default:
         break;
+    }
+  }
+
+  Future<void> _saveGoals({required double kcalGoal}) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await Supabase.instance.client
+    .from('user_goals')
+    .upsert(
+      [
+        {
+        'user_id': userId,
+        'kcal_goal': kcalGoal,
+        }
+      ],
+      onConflict: 'user_id',
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Goal Set!'), backgroundColor: Colors.green),
+      );
     }
   }
 
@@ -751,6 +822,15 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    
+    // Today's goals values from Supabase aggregate
+    final kcalGoal = (goals?['kcal_goal'] ?? 200).toDouble();
+    final proteinGoal = (goals?['protein_goal'] ?? 100).toDouble();
+    final fatGoal = (goals?['fat_goal'] ?? 100).toDouble();
+    final fiberGoal = (goals?['fiber_goal'] ?? 100).toDouble();
+    final carbsGoal = (goals?['carbs_goal'] ?? 100).toDouble();
+
+
     // Today's nutrition values from Supabase aggregate
     final totalConsumed = (_dailyAgg['kcal_sum'] ?? 0).toInt();
     final proteinConsumed = (_dailyAgg['protein_sum'] ?? 0).toDouble();
@@ -760,10 +840,10 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
     // Format today's date as "Sep 27, 2025"
     final todayText = "${_selectedDate.day} ${_monthName(_selectedDate.month)}, ${_selectedDate.year}";
-    double remaining = _goalKcal - totalConsumed;
+    double remaining = _kcalGoal - totalConsumed;
     // complete flag or label
 
-    final bool isComplete = totalConsumed >= _goalKcal; // true when eaten is equal or greater than goal
+    final bool isComplete = totalConsumed >= _kcalGoal; // true when eaten is equal or greater than goal
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFFFF),
@@ -771,14 +851,14 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.only(left: 16, right:16, top: 0, bottom: 24),
+              padding: const EdgeInsets.only(left: 16, right:16, top: 4, bottom: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                 buildCustomAppBar(),
                 // Header with user name from Supabase profiles
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4), // adjust as needed
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8), // adjust as needed
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -807,7 +887,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                   ),
                 ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   
                   // Redesigned Today's Nutrients Card
                   // Uses today's nutrition intake from Supabase
@@ -820,8 +900,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         borderRadius: BorderRadius.circular(20),   
                         boxShadow: [
                           BoxShadow(
-                            color: const Color.fromRGBO(0, 0, 0, 0.15),
-                            blurRadius: 4,
+                            color: const Color.fromRGBO(0, 0, 0, 0.2),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -869,7 +949,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   CustomPaint(
                                                     size: const Size(120, 120),
                                                     painter: CircleProgressPainter(
-                                                      percent: (totalConsumed / _goalKcal).clamp(0.0, 1.0),
+                                                      percent: (totalConsumed / _kcalGoal).clamp(0.0, 1.0),
                                                       trackColor: Colors.orangeAccent.withOpacity(0.12),
                                                       progressColor: Colors.orangeAccent,
                                                       strokeWidth: 12,
@@ -878,7 +958,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   Column(
                                                     mainAxisSize: MainAxisSize.min,
                                                     children: [
-                                                      Text('$_goalKcal', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                                      Text('$_kcalGoal', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                       Text(isComplete ? 'Completed' : '${remaining.toStringAsFixed(0)} until'),
                                                       const Text('target', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                     ],
@@ -908,13 +988,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                    GestureDetector(
                                                     onTap: () async {
                                                       // your dialog logic here
-                                                      final tempInitial = _goalKcal;
                                                       final TextEditingController controller =
-                                                          TextEditingController(text: tempInitial?.toInt().toString());
+                                                          TextEditingController(text: _kcalGoal.toInt().toString());
                                                       final result = await showDialog<double>(
                                                         context: context,
                                                         builder: (ctx) {
-                                                          double? temp = tempInitial;
+                                                          double? temp = _kcalGoal;
                                                           return StatefulBuilder(builder: (ctx, setDialogState) {
                                                             return Theme(
                                                               data: Theme.of(ctx).copyWith(
@@ -946,10 +1025,10 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                                     child: const Text('Cancel'),
                                                                   ),
                                                                   TextButton(
-                                                                    onPressed: () {
+                                                                    onPressed: () async {
                                                                       if (temp == null || temp! <= 0) return;
-                                                                      Navigator.of(ctx).pop(temp);
-                                                                    },
+                                                                        Navigator.of(ctx).pop(temp);
+                                                                      },
                                                                     style: TextButton.styleFrom(foregroundColor: Colors.green),
                                                                     child: const Text('Save'),
                                                                   ),
@@ -960,7 +1039,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                         },
                                                       );
                                                       if (result != null && mounted) {
-                                                        setState(() => _goalKcal = result);
+                                                        setState(() => _kcalGoal = result);
+                                                        await _saveGoals(kcalGoal: _kcalGoal); 
                                                       }
                                                     },
                                                     child: Icon(
@@ -969,10 +1049,22 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                       size: 16,
                                                     ),
                                                   ),
-
                                                 ],
                                               ),
-                                              const Spacer(), // push content to vertical center
+                                              /* const SizedBox(height: 12),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    'Set Goals',
+                                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                                                  ),
+                                                  // inside build where you currently have the IconButton
+
+                                                ],
+                                              ),   */                                 
+                                              const Spacer(),
                                             ],
                                           ),
                                         ),
@@ -1122,7 +1214,9 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                       ),
                     ),
                   ),
-                  
+
+                  const SizedBox(height: 4),
+
                   FutureBuilder<List<Map<String, dynamic>>>(
                     future: fetchUserFoodIntakes(),
                     builder: (context, snapshot) {
@@ -1147,47 +1241,82 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final item = items[index];
-
                           final imagePath = item['image_url'] ?? '';
                           final imageFuture = Supabase.instance.client.storage
                               .from('food-images')
                               .createSignedUrl(imagePath, 60 * 60);
 
-                          return FutureBuilder<String>(
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: Duration(milliseconds: 1000 + (index * 70)), // stagger for smoothness
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)), // slides up gently
+                                  child: child,
+                                ),
+                              );
+                            },
+                          child: FutureBuilder<String>(
                             future: imageFuture,
                             builder: (context, imgSnap) {
                               final imageUrl = imgSnap.data;
 
                               return GestureDetector(
-                                onTap: () => _openEditModal(item), // pass the current item
+                                onTap: () => _openEditModal(item),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0), // 👈 add horizontal too
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),   
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color.fromRGBO(0, 0, 0, 0.10),
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ), // pass the current item
                                 child: Card(
                                   color: const Color.fromARGB(255, 255, 255, 255),
-                                  margin: const EdgeInsets.symmetric(vertical: 12),
-                                  elevation: 4, //  Adjust for stronger or softer shadow
-                                  shadowColor: const Color.fromRGBO(0, 0, 0, 0.55), //  softer, diffused shadow                         
+                                  elevation: 0, //  Adjust for stronger or softer shadow
                                   child: Padding(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.all(10),
                                     child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center, 
                                       children: [
-                                        if (imageUrl != null)
-                                          Container(
-                                            width: 96,
-                                            height: 96,
-                                            margin: const EdgeInsets.only(right: 12),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: ColorFiltered(
-                                                colorFilter: ColorFilter.mode(
-                                                  const Color.fromARGB(255, 188, 188, 188).withOpacity(0.5),
-                                                  BlendMode.darken, // this darkens the image evenly
-                                                ),
-                                                child: Image.network(imageUrl, fit: BoxFit.cover),
-                                              )
-                                            ),
+                                        Container(
+                                          width: 96,
+                                          height: 96,
+                                          margin: const EdgeInsets.only(right: 12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
+                                          clipBehavior: Clip.hardEdge,
+                                          child: imageUrl == null
+                                            ? Image.asset(
+                                                'assets/white.png', // 👈 same placeholder you use before
+                                                fit: BoxFit.cover,
+                                              )
+                                            : FadeInImage.assetNetwork(
+                                                placeholder: 'assets/white.png',
+                                                image: imageUrl!,
+                                                fit: BoxFit.cover,
+                                                fadeInDuration: const Duration(milliseconds: 150),
+                                                fadeOutDuration: const Duration(milliseconds: 150),
+                                                imageErrorBuilder: (context, error, stackTrace) => const Center(
+                                                  child: Icon(Icons.image_not_supported_outlined,
+                                                      color: Colors.grey, size: 28),
+                                                ),
+                                              ),
+                                        ),
+
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min, 
                                             children: [
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1204,7 +1333,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                       style: const TextStyle(
                                                         fontSize: 16,
                                                         fontWeight: FontWeight.w600,
-                                                        color: Color.fromARGB(255, 153, 153, 153),
+                                                        color: Color.fromARGB(255, 94, 94, 94),
                                                       ),
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
@@ -1218,6 +1347,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                   // remove button
                                                   Padding(
                                                     padding: const EdgeInsets.only(left: 4, right: 0), // adjust value if needed
+                                                    child: SizedBox(
+                                                      width: 24, height: 24,
                                                       child :IconButton(
                                                         icon: const Icon(Icons.close, size: 18, color: Color.fromARGB(255, 186, 186, 186)),
                                                         padding: EdgeInsets.zero,
@@ -1273,18 +1404,19 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                         }
                                                       },
                                                     ),
+                                                    ),
                                                   ),
                                                 ],
                                               ),
-
-                                              const SizedBox(height: 8),
-
+                                                    
                                               Text(
                                                 '${item['kcal'] ?? '0'} Calories',
                                                 style: const TextStyle(
                                                     fontSize: 18, fontWeight: FontWeight.bold),
                                               ),
-                                              const SizedBox(height: 8),
+                                            
+                                              const SizedBox(height: 4),
+                                              
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
@@ -1382,8 +1514,10 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                     ),
                                   ),
                                 ),
+                              ),
                               );
                             },
+                          ),
                           );
                         },
                       );
@@ -1403,7 +1537,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
         ),
         clipBehavior: Clip.none,
         child: Container(
-          height: 70,
+          height: 85,
           decoration: BoxDecoration(
             color: Colors.white, // nav background
             boxShadow: [

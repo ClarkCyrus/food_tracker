@@ -14,7 +14,6 @@ class _LoginPageState extends State<LoginPage> {
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
-  String? _error;
 
   @override
   void dispose() {
@@ -24,7 +23,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
-    setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
 
@@ -70,7 +68,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       );
-      setState(() => _error = userMessage);
 
     } finally {
       if (mounted) setState(() => _loading = false);

@@ -1,90 +1,110 @@
 import 'package:flutter/material.dart';
 
-Future<Map<String, dynamic>?> showEditNutritionModal({
-  required BuildContext context,
-  Map<String, dynamic>? initial,
-  String? imageUrl,
-  double imageHeight = 220,   // visible image height used in Home
-  double overlap = 16,        // how much the image should overflow under the rounded sheet=
-}) {
-  final media = MediaQuery.of(context);
-  final totalHeight = media.size.height;
-  final sheetTop = (imageHeight - overlap).clamp(0.0, totalHeight);
+  Future<Map<String, dynamic>?> showEditNutritionModal({
+    required BuildContext context,
+    Map<String, dynamic>? initial,
+    String? imageUrl,
+    double imageHeight = 400,   // visible image height used in Home
+    double overlap = 16,        // how much the image should overflow under the rounded sheet=
+  })
+  
+    {
+    final media = MediaQuery.of(context);
+    final totalHeight = media.size.height;
+    final sheetTop = (imageHeight - overlap).clamp(0.0, totalHeight);
 
-  return showModalBottomSheet<Map<String, dynamic>?>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black54,
-    builder: (ctx) {
-      return SizedBox(
-        height: totalHeight,
-        width: double.infinity,
-        child: Stack(
-          children: [
-            // Top image from URL
-            if (imageUrl != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: imageHeight,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-              ),
-              
-            // The rounded sheet positioned to overlap the image by `overlap`
-            Positioned(
-              left: 0,
-              right: 0,
-              top: sheetTop,
-              bottom: 0,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  clipBehavior: Clip.hardEdge,
-                  child: SafeArea(
-                    top: false,
-                    child: Theme(
-                      data: Theme.of(ctx).copyWith(
-                        textSelectionTheme: const TextSelectionThemeData(
-                          cursorColor: Color.fromARGB(255, 175, 250, 214),
-                          selectionColor: Color.fromARGB(255, 175, 250, 214),
-                          selectionHandleColor: Color.fromARGB(255, 3, 209, 110),
-                        ),
-                        inputDecorationTheme: InputDecorationTheme(
-                          filled: true,
-                          fillColor: Colors.white,
-                          labelStyle: const TextStyle(color: Color.fromARGB(255, 0, 166, 86)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: const Color.fromARGB(255, 143, 143, 143)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      child: _EditNutritionContent(initial: initial),
+    return showModalBottomSheet<Map<String, dynamic>?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        return SizedBox(
+          height: totalHeight,
+          width: double.infinity,
+          child: Stack(
+            children: [
+              // Top image from URL
+              if (imageUrl != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: imageHeight,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      // 👇 Prevents layout jump or error flicker
+                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                        // If it's loaded instantly (from cache), show immediately
+                        if (wasSynchronouslyLoaded) return child;
+
+                        // While loading, just keep showing a plain background placeholder
+                        return Container(
+                          color: Colors.white, // or a light gray
+                          child: frame != null
+                              ? child // once first frame arrives, swap instantly
+                              : Container(color: Colors.white),
+                        );
+                      },
+                      // 👇 Avoids the “red X” or crash UI on load error
+                      errorBuilder: (context, error, stackTrace) => 
+                          Image.asset('assets/placeholder.png', fit: BoxFit.cover),
                     ),
                   ),
                 ),
-              ),
+                // The rounded sheet positioned to overlap the image by `overlap`
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: sheetTop,
+                  bottom: 0,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: SafeArea(
+                        top: false,
+                        child: Theme(
+                          data: Theme.of(ctx).copyWith(
+                            textSelectionTheme: const TextSelectionThemeData(
+                              cursorColor: Color.fromARGB(255, 175, 250, 214),
+                              selectionColor: Color.fromARGB(255, 175, 250, 214),
+                              selectionHandleColor: Color.fromARGB(255, 3, 209, 110),
+                            ),
+                            inputDecorationTheme: InputDecorationTheme(
+                              filled: true,
+                              fillColor: Colors.white,
+                              labelStyle: const TextStyle(color: Color.fromARGB(255, 0, 166, 86)),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: const Color.fromARGB(255, 143, 143, 143)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          child: _EditNutritionContent(initial: initial),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       );
-    },
-  );
-}
+    }
 
 /* Keep the rest of the content the same as your _EditNutritionContent implementation.
    Example _EditNutritionContent below — reuse your existing implementation. */
@@ -271,13 +291,18 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
+                                side: const BorderSide(
+                                  color: Color.fromARGB(255, 0, 0, 0), // border color
+                                  width: 1, // optional: border width
+                                ),
+                              ),
                               backgroundColor: Colors.white,
                               foregroundColor: const Color.fromARGB(255, 0, 0, 0),
                             ),
                             child: const Text('Cancel',
                               style: TextStyle(
-                                  color: Color.fromARGB(255, 3, 209, 110),
+                                  color: Color.fromARGB(255, 0, 0, 0),
                                   fontSize: 16,
                                 ),
                               ),
@@ -303,12 +328,17 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
                               backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                               foregroundColor: const Color.fromARGB(255, 0, 0, 0),
                               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
+                                side: const BorderSide(
+                                  color: Color.fromARGB(255, 0, 0, 0), // border color
+                                  width: 1, // optional: border width
+                                ),
+                              ),
                             ),
                             child: const Text(
                               'Save',
                               style: TextStyle(
-                                color: Color.fromARGB(255, 3, 209, 110),
+                                color: Color.fromARGB(255, 0, 0, 0),
                                 fontSize: 16,
                               ),
                             ),
@@ -347,9 +377,12 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
       },
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: const Color.fromARGB(255, 0, 0, 0)), // border color when not focused
+        ),
         filled: true,
-        fillColor: isEditing ? Colors.white : Colors.grey[100],
+        fillColor: isEditing ? Colors.grey[100] : Colors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
         suffixIcon: IconButton(
           icon: Icon(isEditing ? Icons.check : Icons.edit, size: 20),

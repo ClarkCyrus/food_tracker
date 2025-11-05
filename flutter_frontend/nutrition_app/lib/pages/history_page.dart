@@ -142,7 +142,7 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
         ],
       ),
 
-      body: isLoading
+      body: isLoading 
           ? const Center(child: CircularProgressIndicator())
           : foodHistory.isEmpty
               ? const Center(child: Text('No food entries for this date'))
@@ -154,34 +154,63 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
                     return FutureBuilder<String?>(
                       future: _getSignedImageUrl(food['image_url']),
                       builder: (context, snapshot) {
-                        final imageUrl = snapshot.data;
-
-                        return Card(
+                        return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          color: const Color.fromARGB(255, 255, 255, 255),
-                          elevation: 4, //  Adjust for stronger or softer shadow
-                          shadowColor: const Color.fromRGBO(0, 0, 0, 0.55), //  softer, diffused shadow
-                          child: ListTile(
-                            leading: food['signed_url'] != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      food['signed_url'],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.fastfood),
-                                    ),
-                                  )
-                                : const Icon(Icons.fastfood),
-                            title: Text(_titleCaseLabel(food['label'] ?? 'Unknown Meal')),
-                            subtitle: Text(
-                                'Kcal: ${food['kcal'] ?? 0}, Protein: ${food['protein_g'] ?? 0}g\nCarbs: ${food['carbs_g'] ?? 0}g, Fat: ${food['fat_g'] ?? 0}g'),
-                            isThreeLine: true,
-                            trailing: Text(DateFormat('hh:mm a').format(DateTime.parse(food['created_at']).toLocal())),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color.fromRGBO(0, 0, 0, 0.2),
+                                blurRadius: 3,
+                                offset: const Offset(0, 2), // subtle, mostly underneath
+                              ),
+                            ],
+                          ),
+                          child: Card(
+                            color: Colors.white,
+                            elevation: 0, // Container handles shadow
+                            margin: EdgeInsets.zero, // prevent double spacing
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.white,
+                                  child: food['signed_url'] != null
+                                      ? FadeInImage.assetNetwork(
+                                          placeholder: 'assets/white.png',
+                                          image: food['signed_url'],
+                                          fit: BoxFit.cover,
+                                          fadeInDuration: const Duration(milliseconds: 200),
+                                          fadeOutDuration: const Duration(milliseconds: 200),
+                                          imageErrorBuilder: (_, __, ___) =>
+                                              Image.asset('assets/white.png', fit: BoxFit.cover),
+                                        )
+                                      : Image.asset(
+                                          'assets/placeholder.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                              ),
+                              title: Text(
+                                _titleCaseLabel(food['label'] ?? 'Unknown Meal'),
+                              ),
+                              subtitle: Text(
+                                'Kcal: ${food['kcal'] ?? 0}, Protein: ${food['protein_g'] ?? 0}g\n'
+                                'Carbs: ${food['carbs_g'] ?? 0}g, Fat: ${food['fat_g'] ?? 0}g',
+                              ),
+                              isThreeLine: true,
+                              trailing: Text(
+                                DateFormat('hh:mm a')
+                                    .format(DateTime.parse(food['created_at']).toLocal()),
+                              ),
+                            ),
                           ),
                         );
-                        
                       },
                     );
                   },
@@ -194,7 +223,7 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
                   ),
                   clipBehavior: Clip.none,
                   child: Container(
-                    height: 70,
+                    height: 85,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
