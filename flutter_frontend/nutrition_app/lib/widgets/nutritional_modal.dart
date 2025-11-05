@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
     required BuildContext context,
     Map<String, dynamic>? initial,
     String? imageUrl,
-    double imageHeight = 400,   // visible image height used in Home
+    double imageHeight = 340,   // visible image height used in Home
     double overlap = 16,        // how much the image should overflow under the rounded sheet=
   })
   
@@ -290,7 +290,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
                           child: ElevatedButton(
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
                                 side: const BorderSide(
                                   color: Color.fromARGB(255, 0, 0, 0), // border color
@@ -327,7 +327,7 @@ class _EditNutritionContentState extends State<_EditNutritionContent> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                               foregroundColor: const Color.fromARGB(255, 0, 0, 0),
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
                                 side: const BorderSide(
                                   color: Color.fromARGB(255, 0, 0, 0), // border color

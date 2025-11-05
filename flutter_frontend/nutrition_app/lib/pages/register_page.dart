@@ -67,11 +67,11 @@ class _RegisterPageState extends State<RegisterPage> {
           'user_id': res.user!.id,
           'display_name': name,
           'first_name': name,
-          // 'avatar_url': null, // optional
+          'avatar_url': "", 
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome aboard, $name! 🎉')),
+          SnackBar(content: Text('Welcome aboard, $name! 🎉'), backgroundColor: Colors.green,),
         );
         Navigator.pushReplacementNamed(context, '/login');
       } else {
@@ -177,7 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           validator: _validateName,
                           decoration: _inputDecoration(
                             icon: const Icon(Icons.person_outline),
-                            hint: 'Full Name',
+                            hint: 'Name',
                           ),
                         ),
                         const SizedBox(height: 16),
