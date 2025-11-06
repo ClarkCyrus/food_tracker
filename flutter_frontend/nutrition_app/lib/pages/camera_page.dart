@@ -46,17 +46,36 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
     super.dispose();
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     if (!_isCameraReady) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 250, 250, 250), // make background white instead of black
       body: Stack(
         children: [
-          SizedBox.expand(
-            child: CameraPreview(_controller!),
+          Center(
+            child: AspectRatio(
+              aspectRatio: 9 / 16, // enforce portrait ratio
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: Container(
+                  color: Colors.transparent, 
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: _controller!.value.previewSize!.height,
+                      height: _controller!.value.previewSize!.width,
+                      child: CameraPreview(_controller!),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: 30,
@@ -64,13 +83,17 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
             right: 0,
             child: Center(
               child: FloatingActionButton(
+                backgroundColor: Colors.white, // white background for logo/button
                 onPressed: _takePhoto,
-                child: const Icon(Icons.camera_alt, color: Color.fromARGB(255, 3, 209, 110)),
+                child: const Icon(
+                  Icons.camera_alt,
+                  color: Color.fromARGB(255, 3, 209, 110),
+                ),
               ),
             ),
           ),
         ],
-      )
+      ),
     );
   }
 }

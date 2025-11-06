@@ -121,8 +121,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   String? _avatarSignedUrl; // temporary signed URL for display
 
   String defaultServerUrl() {
-    if (kIsWeb) return 'http://localhost:8000'; //'https://rendertfmodeltest.onrender.com'; // web developer machine
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000'; // Android emulator
+    if (kIsWeb) return  'http://localhost:8000';  // web developer machine 'https://rendertfmodeltest.onrender.com';
+    if (Platform.isAndroid) return 'https://rendertfmodeltest.onrender.com'; // Android emulator
     if (Platform.isIOS) return 'http://localhost:8000'; // iOS simulator
     return 'http://127.0.0.1:8000'; // fallback for desktop/dev
   }
@@ -320,6 +320,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
           'image_url': filePath,
         });
 
+        await _loadDailyAgg();
         setState(() => _lastResult = result);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -615,7 +616,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
             SnackBar(content: Text('Upload failed: $e')),
           );
         } finally {
-          if (mounted) setState(() => _uploading = false);
+          if (mounted) await _loadDailyAgg(); setState(() => _uploading = false);
         }
       } else {
         throw Exception('No image data selected');
@@ -686,6 +687,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
           'fat_g': edited['fat_g'],
           'carbs_g': edited['carbs_g'],
           'fiber_g': edited['fiber_g'], 
+          'servings': edited['servings'], 
         })
         .eq('id', foodItem['id']);
       
@@ -804,7 +806,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
               const SizedBox(height: 20),
               
               // Buttons
-              ElevatedButton.icon(
+              /* ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
                   // call your change name logic
@@ -815,8 +817,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.green, // text & icon color
                 ),
-              ),
-              const SizedBox(height: 8),
+              ), 
+              const SizedBox(height: 8),*/
               ElevatedButton.icon(
                 onPressed: () { 
                   pickAndUploadAvatar(context);
@@ -1149,12 +1151,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                       color: Colors.orangeAccent.withOpacity(0.12),
                                                       shape: BoxShape.circle,
                                                     ),
-                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 14),
+                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 12),
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
                                                     '$totalConsumed Kcal',
-                                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                                   ),
                                                   // inside build where you currently have the IconButton
                                                    GestureDetector(
@@ -1257,28 +1259,28 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                         },
                                                       );
                                                       if (result != null && mounted) {
-                                                            setState(() {
-                                                              _kcalGoal = result['kcal']!;
-                                                              _carbsGoal = result['carbs']!;
-                                                              _proteinGoal = result['protein']!;
-                                                              _fatGoal = result['fat']!;
-                                                              _fiberGoal = result['fiber']!;
-                                                            });
+                                                        setState(() {
+                                                          _kcalGoal = result['kcal']!;
+                                                          _carbsGoal = result['carbs']!;
+                                                          _proteinGoal = result['protein']!;
+                                                          _fatGoal = result['fat']!;
+                                                          _fiberGoal = result['fiber']!;
+                                                        });
 
-                                                            await _saveGoals(
-                                                              kcalGoal: _kcalGoal,
-                                                              carbGoal: _carbsGoal,
-                                                              proteinGoal: _proteinGoal,
-                                                              fatGoal: _fatGoal,
-                                                              fiberGoal: _fiberGoal,
-                                                            );
+                                                        await _saveGoals(
+                                                          kcalGoal: _kcalGoal,
+                                                          carbGoal: _carbsGoal,
+                                                          proteinGoal: _proteinGoal,
+                                                          fatGoal: _fatGoal,
+                                                          fiberGoal: _fiberGoal,
+                                                        );
 
                                                       }
                                                     },
                                                     child: Icon(
                                                       Icons.chevron_right,
                                                       color: Colors.grey.shade400,
-                                                      size: 16,
+                                                      size: 14,
                                                     ),
                                                   ),
                                                 ],
@@ -1324,8 +1326,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 Colors.transparent, // fade to transparent
                                               ],
                                               stops: [
-                                                (carbsConsumed / carbsGoal).clamp(0.0, 1.0), // portion filled
-                                                (carbsConsumed / carbsGoal).clamp(0.0, 1.0),
+                                                (carbsConsumed / _carbsGoal).clamp(0.0, 1.0), // portion filled
+                                                (carbsConsumed / _carbsGoal).clamp(0.0, 1.0),
                                               ],
                                               begin: Alignment.centerLeft,
                                               end: Alignment.centerRight,
@@ -1344,7 +1346,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${carbsConsumed.toStringAsFixed(0)}g / ${_carbsGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                  Text('${carbsConsumed.toStringAsFixed(0)}g / ${_carbsGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                                   const Text('Carbs', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1368,8 +1370,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 Colors.transparent, // fade to transparent
                                               ],
                                               stops: [
-                                                (proteinConsumed / proteinGoal).clamp(0.0, 1.0), // portion filled
-                                                (proteinConsumed / proteinGoal).clamp(0.0, 1.0),
+                                                (proteinConsumed / _proteinGoal).clamp(0.0, 1.0), // portion filled
+                                                (proteinConsumed / _proteinGoal).clamp(0.0, 1.0),
                                               ],
                                               begin: Alignment.centerLeft,
                                               end: Alignment.centerRight,
@@ -1388,7 +1390,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${proteinConsumed.toStringAsFixed(0)}g / ${_proteinGoal.toStringAsFixed(0)}g ', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                  Text('${proteinConsumed.toStringAsFixed(0)}g / ${_proteinGoal.toStringAsFixed(0)}g ', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                                   const Text('Protein', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1412,8 +1414,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 Colors.transparent, // fade to transparent
                                               ],
                                               stops: [
-                                                (fatConsumed / fatGoal).clamp(0.0, 1.0), // portion filled
-                                                (fatConsumed / fatGoal).clamp(0.0, 1.0),
+                                                (fatConsumed / _fatGoal).clamp(0.0, 1.0), // portion filled
+                                                (fatConsumed / _fatGoal).clamp(0.0, 1.0),
                                               ],
                                               begin: Alignment.centerLeft,
                                               end: Alignment.centerRight,
@@ -1432,7 +1434,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${fatConsumed.toStringAsFixed(0)}g / ${_fatGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                  Text('${fatConsumed.toStringAsFixed(0)}g / ${_fatGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                                   const Text('Fat', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1456,8 +1458,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 Colors.transparent, // fade to transparent
                                               ],
                                               stops: [
-                                                (fiberConsumed / fiberGoal).clamp(0.0, 1.0), // portion filled
-                                                (fiberConsumed / fiberGoal).clamp(0.0, 1.0),
+                                                (fiberConsumed / _fiberGoal).clamp(0.0, 1.0), // portion filled
+                                                (fiberConsumed / _fiberGoal).clamp(0.0, 1.0),
                                               ],
                                               begin: Alignment.centerLeft,
                                               end: Alignment.centerRight,
@@ -1476,7 +1478,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${fiberConsumed.toStringAsFixed(0)}g / ${_fiberGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                  Text('${fiberConsumed.toStringAsFixed(0)}g / ${_fiberGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                                   const Text('Fiber', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),

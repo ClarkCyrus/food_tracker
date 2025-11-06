@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
@@ -14,6 +15,25 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/.env');
+
+  await AwesomeNotifications().initialize(
+    null, // icon for notifications, null = default app icon
+    [
+      NotificationChannel(
+        channelKey: 'basic_channel',
+        channelName: 'Basic Notifications',
+        channelDescription: 'Notification channel for daily reminders',
+        defaultColor: Colors.green,
+        ledColor: Colors.white,
+        importance: NotificationImportance.High,
+      ),
+    ],
+  );
+
+  bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+  if (!isAllowed) {
+    await AwesomeNotifications().requestPermissionToSendNotifications();
+  }
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 class FoodHistoryPage extends StatefulWidget {
   const FoodHistoryPage({Key? key}) : super(key: key);
@@ -108,6 +109,18 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
       return;
     }
     setState(() => _currentIndex = idx);
+  } 
+
+  void _sendNotification() {
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 1,
+        channelKey: 'basic_channel',
+        title: 'Hey there 👋',
+        body: 'Complete Your Goals Today!',
+        notificationLayout: NotificationLayout.Default, 
+      ),
+    );
   }
 
   String _titleCaseLabel(String raw) {
@@ -135,6 +148,10 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active),
+            onPressed: _sendNotification, // 🔔 test notification
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: _pickDate,
@@ -209,9 +226,13 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
                                     .format(DateTime.parse(food['created_at']).toLocal()),
                               ),
                             ),
+                            
                           ),
+                          
                         );
+                        
                       },
+                      
                     );
                   },
                 ),
