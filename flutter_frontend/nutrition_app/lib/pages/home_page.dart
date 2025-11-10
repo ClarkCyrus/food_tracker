@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 import 'package:nutrition_app/main.dart';
 import '../pages/camera_page.dart';
@@ -119,6 +120,9 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
   String? _avatarUrl;       // path stored in Supabase (e.g., profile_abc123.jpg)
   String? _avatarSignedUrl; // temporary signed URL for display
+
+  Set<String>? _lastShownReached;
+  bool _popupActive = false;  
 
   String defaultServerUrl() {
     if (kIsWeb) return  'http://localhost:8000';  // web developer machine 'https://rendertfmodeltest.onrender.com';
@@ -243,7 +247,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       );
     }
     if (!mounted) return;
-    setState(() => _loadingAgg = false);
+    setState(() =>  _loadingAgg = false);
+    _showInitialGoals();
   }
 
   Future<void> _loadFoodIntakes() async {
@@ -471,7 +476,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Please select an image'),
-                            backgroundColor: Colors.orange,
+                            backgroundColor: Colors.orangeAccent,
                           ),
                         );
                         return;
@@ -518,6 +523,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                         Navigator.of(context).pop();
                         await _loadDailyAgg();
                         setState(() {});
+                        _showInitialGoals();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Meal added successfully!'),
@@ -803,7 +809,17 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              
+              ElevatedButton.icon(
+                onPressed: () { 
+                  _sendNotification(); // 🔔 test notification
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.green,
+                ),
+              ),
               // Buttons
               /* ElevatedButton.icon(
                 onPressed: () {
@@ -816,8 +832,8 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.green, // text & icon color
                 ),
-              ), 
-              const SizedBox(height: 8),*/
+              ), ,*/
+              const SizedBox(height: 8),
               ElevatedButton.icon(
                 onPressed: () { 
                   pickAndUploadAvatar(context);
@@ -948,10 +964,164 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     );
 
     if (mounted) {
+      _showInitialGoals();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Goal Set!'), backgroundColor: Colors.green),
       );
     }
+
+  }
+
+  void _showGoalPopup(BuildContext context, String message) {
+  if (_popupActive) return;
+  _popupActive = true;
+
+  final overlay = OverlayEntry(
+    builder: (context) => Positioned(
+      top: 50,
+      left: MediaQuery.of(context).size.width * 0.1,
+      width: MediaQuery.of(context).size.width * 0.8,
+      child: Material(
+        color: Colors.transparent,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 300),
+          builder: (context, opacity, child) {
+            return Opacity(
+              opacity: opacity,
+              child: child,
+            );
+          },
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 55, 83, 243),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  final overlayState = Overlay.of(context);
+  if (overlayState != null) {
+    overlayState.insert(overlay);
+
+    // Fade out after 2 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      overlay.markNeedsBuild();
+      final fadeOutOverlay = OverlayEntry(
+        builder: (context) => Positioned(
+          top: 50,
+          left: MediaQuery.of(context).size.width * 0.1,
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: Material(
+            color: Colors.transparent,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 1.0, end: 0.0),
+              duration: const Duration(milliseconds: 300),
+              builder: (context, opacity, child) {
+                return Opacity(opacity: opacity, child: child);
+              },
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.indigoAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.info, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      overlay.remove();
+      overlayState.insert(fadeOutOverlay);
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        fadeOutOverlay.remove();
+        _popupActive = false;
+      });
+    });
+  }
+}
+
+  void _showInitialGoals()  async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    // Check if data is loaded
+    if (_dailyAgg.isEmpty) return;
+
+    final totalConsumed = (_dailyAgg['kcal_sum'] ?? 0).toDouble();
+    final proteinConsumed = (_dailyAgg['protein_sum'] ?? 0).toDouble();
+    final fatConsumed = (_dailyAgg['fat_sum'] ?? 0).toDouble();
+    final fiberConsumed = (_dailyAgg['fiber_sum'] ?? 0).toDouble();
+    final carbsConsumed = (_dailyAgg['carbs_sum'] ?? 0).toDouble();
+
+    final kcalGoal = _kcalGoal;
+    final proteinGoal = _proteinGoal;
+    final fatGoal = _fatGoal;
+    final fiberGoal = _fiberGoal;
+    final carbsGoal = _carbsGoal;
+
+    final reached = <String>{};
+    if (totalConsumed >= kcalGoal) reached.add('Calories');
+    if (proteinConsumed >= proteinGoal) reached.add('Protein');
+    if (fatConsumed >= fatGoal) reached.add('Fat');
+    if (fiberConsumed >= fiberGoal) reached.add('Fiber');
+    if (carbsConsumed >= carbsGoal) reached.add('Carbs');
+
+    if (reached.isEmpty) return;
+
+    final message = reached.join(', ') + (reached.length > 1 ? ' goals reached!' : ' goal reached!');
+    _showGoalPopup(context, message);
+  }
+
+  void _sendNotification() {
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 1,
+        channelKey: 'basic_channel',
+        title: 'Hey there 👋',
+        body: 'Complete Your Goals Today!',
+        notificationLayout: NotificationLayout.Default, 
+      ),
+    );
   }
 
   Widget buildCustomAppBar() {
@@ -1345,7 +1515,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${carbsConsumed.toStringAsFixed(0)}g / ${_carbsGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                                  Text('${carbsConsumed.toStringAsFixed(0)}g / ${_carbsGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                   const Text('Carbs', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1389,7 +1559,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${proteinConsumed.toStringAsFixed(0)}g / ${_proteinGoal.toStringAsFixed(0)}g ', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                                  Text('${proteinConsumed.toStringAsFixed(0)}g / ${_proteinGoal.toStringAsFixed(0)}g ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                   const Text('Protein', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1433,7 +1603,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${fatConsumed.toStringAsFixed(0)}g / ${_fatGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                                  Text('${fatConsumed.toStringAsFixed(0)}g / ${_fatGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                   const Text('Fat', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),
@@ -1477,7 +1647,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text('${fiberConsumed.toStringAsFixed(0)}g / ${_fiberGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                                  Text('${fiberConsumed.toStringAsFixed(0)}g / ${_fiberGoal.toStringAsFixed(0)}g', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                   const Text('Fiber', style: TextStyle(fontSize: 12, color: Colors.grey)),
                                                 ],
                                               ),

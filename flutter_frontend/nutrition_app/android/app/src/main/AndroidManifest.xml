@@ -6,7 +6,7 @@
         android:name="android.permission.POST_NOTIFICATIONS" 
     />
     <application
-        android:label="Nutrition App"
+        android:label="Snap"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

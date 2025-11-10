@@ -3,7 +3,6 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
 
 class FoodHistoryPage extends StatefulWidget {
   const FoodHistoryPage({Key? key}) : super(key: key);
@@ -346,18 +345,6 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
     setState(() => _currentIndex = idx);
   } 
 
-  void _sendNotification() {
-    AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 1,
-        channelKey: 'basic_channel',
-        title: 'Hey there 👋',
-        body: 'Complete Your Goals Today!',
-        notificationLayout: NotificationLayout.Default, 
-      ),
-    );
-  }
-
   String _titleCaseLabel(String raw) {
     final r = raw.replaceAll('_', ' ').trim();
     if (r.isEmpty) return 'Unknown';
@@ -412,10 +399,6 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
           ),
         ),
         actions: [
-          /* IconButton(
-            icon: const Icon(Icons.notifications_active),
-            onPressed: _sendNotification, // 🔔 test notification
-          ), */
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: _pickDate,

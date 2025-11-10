@@ -338,7 +338,7 @@ import 'package:flutter/material.dart';
                             child: ElevatedButton(
                               onPressed: () => Navigator.of(context).pop(),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
                                   side: const BorderSide(
                                     color: Color.fromARGB(255, 0, 0, 0), // border color
@@ -376,7 +376,7 @@ import 'package:flutter/material.dart';
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                                 foregroundColor: const Color.fromARGB(255, 0, 0, 0),
-                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), 
                                   side: const BorderSide(
                                     color: Color.fromARGB(255, 0, 0, 0), // border color
@@ -459,7 +459,7 @@ import 'package:flutter/material.dart';
       ),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+      contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
     ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
