@@ -214,7 +214,6 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
     }
   }
 
-
   /// Loads today's nutrition intake using the custom aggregate function.
   Future<void> _loadDailyAgg([DateTime? date]) async {
     final supabase = Supabase.instance.client;
@@ -778,7 +777,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: Colors.white, // dialog background
+          backgroundColor: const Color.fromARGB(246, 255, 255, 255), // dialog background
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1146,12 +1145,12 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                 crossAxisAlignment: CrossAxisAlignment.center,
                                                 children: [
                                                   Container(
-                                                    padding: const EdgeInsets.all(10),
+                                                    padding: const EdgeInsets.all(6),
                                                     decoration: BoxDecoration(
                                                       color: Colors.orangeAccent.withOpacity(0.12),
                                                       shape: BoxShape.circle,
                                                     ),
-                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 12),
+                                                    child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 16),
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(

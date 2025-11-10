@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+import 'package:flutter/painting.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -10,17 +12,222 @@ class FoodHistoryPage extends StatefulWidget {
   _FoodHistoryPageState createState() => _FoodHistoryPageState();
 }
 
+class SevenDayLineChart extends StatelessWidget {
+  final List<Map<String, dynamic>> weeklyData; // [{'day':'Mon','kcal':1200},...]
+
+  const SevenDayLineChart({required this.weeklyData, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 160, // enough for chart + labels
+      child: Column(
+        children: [
+          // Top Row
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Calorie',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  'This Week',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Chart
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 26, right: 8, bottom: 16),
+              child: CustomPaint(
+                painter: _SevenDayLineChartPainter(weeklyData),
+                child: Container(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Helper widget for macro display
+class _MacroColumn extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _MacroColumn({
+    required this.label,
+    required this.value,
+    this.color = Colors.blue,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // small colored bar
+        Container(
+          width: 6,
+          height: 28,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // text column
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+            Text(
+              '$value g',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SevenDayLineChartPainter extends CustomPainter {
+  final List<Map<String, dynamic>> data;
+  _SevenDayLineChartPainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintLine = Paint()
+      ..color = const Color(0xFF03D16E)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final paintCircle = Paint()
+      ..color = const Color(0xFF03D16E)
+      ..style = PaintingStyle.fill;
+
+    final paintFill = Paint()
+      ..color = const Color(0xFF03D16E).withOpacity(0.2)
+      ..style = PaintingStyle.fill;
+
+    final double widthStep = size.width / (data.length - 1);
+    final double maxVal = data.fold<double>(
+        0, (prev, e) => (e['kcal'] as double) > prev ? (e['kcal'] as double) : prev);
+
+    final path = Path();
+    final pathFill = Path();
+
+    for (int i = 0; i < data.length; i++) {
+      final x = i * widthStep;
+      final y = maxVal == 0
+          ? size.height
+          : size.height - ((data[i]['kcal'] as double) / maxVal) * size.height;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+        pathFill.moveTo(x, size.height);
+        pathFill.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        pathFill.lineTo(x, y);
+      }
+    }
+
+    pathFill.lineTo(size.width, size.height);
+    pathFill.close();
+
+    canvas.drawPath(pathFill, paintFill);
+    canvas.drawPath(path, paintLine);
+
+    // Draw points
+    for (int i = 0; i < data.length; i++) {
+      final x = i * widthStep;
+      final y = maxVal == 0
+          ? size.height
+          : size.height - ((data[i]['kcal'] as double) / maxVal) * size.height;
+      canvas.drawCircle(Offset(x, y), 4, paintCircle);
+    }
+
+    // Draw day labels safely inside the container
+    final textStyle = const TextStyle(color: Colors.black54, fontSize: 10);
+    final double horizontalPadding = 0; // 👈 padding on both sides
+
+    for (int i = 0; i < data.length; i++) {
+      // compute x within padded area
+      final x = horizontalPadding + (i * (size.width - 2 * horizontalPadding) / (data.length - 1));
+
+      final String label = data[i]['day'].toString();
+
+      final tp = TextPainter(
+        text: TextSpan(text: label, style: textStyle),
+        textAlign: TextAlign.center,
+        textDirection: ui.TextDirection.ltr,
+      );
+
+      tp.layout();
+
+      // draw label within visible canvas
+      final dx = x - tp.width / 2;
+      final dy = size.height + 6; // a little upward padding from bottom
+      tp.paint(canvas, Offset(dx, dy));
+    }
+
+      const double yLabelRightPadding = -24; 
+
+      // ✅ Y-axis (kcal) labels on the left
+      final yLabelStyle = const TextStyle(color: Colors.black54, fontSize: 8);
+      const int divisions = 4; // e.g. 0, 500, 1000, 1500, 2000
+      final double stepValue = maxVal / divisions;
+
+      for (int i = 0; i <= divisions; i++) {
+        final value = (stepValue * i).round();
+        final y = size.height - (i / divisions) * size.height;
+
+        final tp = TextPainter(
+          text: TextSpan(text: value.toString(), style: yLabelStyle),
+          textAlign: TextAlign.right,
+          textDirection: ui.TextDirection.ltr,
+        )..layout();
+
+       tp.paint(canvas, Offset(yLabelRightPadding, y - tp.height / 2)); // left side
+      }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
 class _FoodHistoryPageState extends State<FoodHistoryPage> {
   final supabase = Supabase.instance.client;
   DateTime selectedDate = DateTime.now();
   List<Map<String, dynamic>> foodHistory = [];
   bool isLoading = false;
+  bool isLoadingWeek = false;
   int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    selectedDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     _loadFoodHistory();
+    _loadWeekHistory();
   }
 
   Future<void> _loadFoodHistory() async {
@@ -55,6 +262,33 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
 
   }
 
+  Future<void> _loadWeekHistory() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    setState(() => isLoadingWeek = true);
+
+    // Get Monday → Sunday of selected week
+    final monday = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+
+    // Only select calories
+    final response = await supabase
+        .from('food_intake')
+        .select('created_at, kcal')
+        .eq('user_id', userId)
+        .gte('created_at', monday.toIso8601String())
+        .lte('created_at', sunday.toIso8601String())
+        .order('created_at', ascending: true);
+
+    final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(response);
+
+    setState(() {
+      _prepareWeeklyCalories(data); // prepares Mon → Sun chart
+      isLoadingWeek = false;
+    });
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -84,6 +318,7 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
     if (picked != null && picked != selectedDate) {
       setState(() => selectedDate = picked);
       _loadFoodHistory();
+      _loadWeekHistory();
     }
   }
 
@@ -132,6 +367,35 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
         .join(' ');
   }
 
+  List<Map<String, dynamic>> weeklyCalories = [];
+  void _prepareWeeklyCalories(List<Map<String, dynamic>> rawData) {
+    if (rawData.isEmpty) {
+      weeklyCalories = [];
+      return;
+    }
+
+    // 1️⃣ Find the Monday of the selected week
+    final selected = selectedDate;
+    final monday = selected.subtract(Duration(days: selected.weekday - 1)); // weekday: Mon=1
+    final sunday = monday.add(const Duration(days: 6));
+
+    // 2️⃣ Aggregate kcal per day
+    final Map<String, double> totals = {};
+    for (var item in rawData) {
+      final date = DateTime.parse(item['created_at']).toLocal();
+      if (date.isBefore(monday) || date.isAfter(sunday)) continue;
+
+      final key = DateFormat('E').format(date); // Mon, Tue, etc.
+      totals[key] = (totals[key] ?? 0) + (item['kcal'] ?? 0).toDouble();
+    }
+
+    // 3️⃣ Fixed order Monday → Sunday
+    const weekOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    weeklyCalories = weekOrder.map((day) {
+      return {'day': day, 'kcal': totals[day] ?? 0};
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,10 +412,10 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
           ),
         ),
         actions: [
-          IconButton(
+          /* IconButton(
             icon: const Icon(Icons.notifications_active),
             onPressed: _sendNotification, // 🔔 test notification
-          ),
+          ), */
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: _pickDate,
@@ -163,80 +427,159 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
           ? const Center(child: CircularProgressIndicator())
           : foodHistory.isEmpty
               ? const Center(child: Text('No food entries for this date'))
-              : ListView.builder(
-                  itemCount: foodHistory.length,
-                  itemBuilder: (context, index) {
-                    final food = foodHistory[index];
-
-                    return FutureBuilder<String?>(
-                      future: _getSignedImageUrl(food['image_url']),
-                      builder: (context, snapshot) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color.fromRGBO(0, 0, 0, 0.2),
-                                blurRadius: 3,
-                                offset: const Offset(0, 2), // subtle, mostly underneath
-                              ),
-                            ],
+              : Column(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15), // subtle all-around shadow
+                            blurRadius: 7,
+                            offset: const Offset(0, 2), // vertical shadow
                           ),
-                          child: Card(
-                            color: Colors.white,
-                            elevation: 0, // Container handles shadow
-                            margin: EdgeInsets.zero, // prevent double spacing
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: Colors.white,
-                                  child: food['signed_url'] != null
-                                      ? FadeInImage.assetNetwork(
-                                          placeholder: 'assets/white.png',
-                                          image: food['signed_url'],
-                                          fit: BoxFit.cover,
-                                          fadeInDuration: const Duration(milliseconds: 200),
-                                          fadeOutDuration: const Duration(milliseconds: 200),
-                                          imageErrorBuilder: (_, __, ___) =>
-                                              Image.asset('assets/white.png', fit: BoxFit.cover),
-                                        )
-                                      : Image.asset(
-                                          'assets/placeholder.png',
-                                          fit: BoxFit.cover,
-                                        ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: SevenDayLineChart(weeklyData: weeklyCalories),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                   child: ListView.builder(
+                    itemCount: foodHistory.length,
+                    itemBuilder: (context, index) {
+                      final food = foodHistory[index];
+                          // 👇 Add the chart above the first record only
+                        return FutureBuilder<String?>(
+                          future: _getSignedImageUrl(food['image_url']),
+                          builder: (context, snapshot) {
+                            final signedUrl = food['signed_url'] ?? snapshot.data;
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color.fromRGBO(0, 0, 0, 0.13),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                              child: Card(
+                                color: Colors.white,
+                                elevation: 0,
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Row 1: image on left, name (below image) and kcal on right-ish
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Image + label stacked
+                                          Column(
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Container(
+                                                  width: 54,
+                                                  height: 54,
+                                                  color: Colors.white,
+                                                  child: signedUrl != null
+                                                      ? FadeInImage.assetNetwork(
+                                                          placeholder: 'assets/white.png',
+                                                          image: signedUrl,
+                                                          fit: BoxFit.cover,
+                                                          fadeInDuration: const Duration(milliseconds: 200),
+                                                          fadeOutDuration: const Duration(milliseconds: 200),
+                                                          imageErrorBuilder: (_, __, ___) =>
+                                                              Image.asset('assets/white.png', fit: BoxFit.cover),
+                                                        )
+                                                      : Image.asset('assets/placeholder.png', fit: BoxFit.cover),
+                                                ),
+                                              ),                                        
+                                            ],
+                                          ),
+
+                                          const SizedBox(width: 12),
+                                          // kcal and spacer to push macros row below
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        _titleCaseLabel(food['label'] ?? 'Unknown Meal'),
+                                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                        food['created_at'] != null
+                                                          ? DateFormat('hh:mm a').format(DateTime.parse(food['created_at']).toLocal())
+                                                          : '',
+                                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 14),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      '${food['kcal'] ?? 0} kcal',
+                                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                                                    ),
+                                                  ],
+                                                ),                                
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Row 2: macros (Protein / Carbs / Fat) spaced evenly
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          _MacroColumn(label: 'Protein', value: '${food['protein_g'] ?? 0}', color: Colors.indigoAccent),
+                                          _MacroColumn(label: 'Carbs', value: '${food['carbs_g'] ?? 0}', color: Colors.redAccent),
+                                          _MacroColumn(label: 'Fat', value: '${food['fat_g'] ?? 0}', color:Colors.orangeAccent),
+                                          _MacroColumn(label: 'Fiber', value: '${food['fiber_g'] ?? 0}', color: Colors.greenAccent),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              title: Text(
-                                _titleCaseLabel(food['label'] ?? 'Unknown Meal'),
-                              ),
-                              subtitle: Text(
-                                'Kcal: ${food['kcal'] ?? 0}, Protein: ${food['protein_g'] ?? 0}g\n'
-                                'Carbs: ${food['carbs_g'] ?? 0}g, Fat: ${food['fat_g'] ?? 0}g',
-                              ),
-                              isThreeLine: true,
-                              trailing: Text(
-                                DateFormat('hh:mm a')
-                                    .format(DateTime.parse(food['created_at']).toLocal()),
-                              ),
-                            ),
-                            
-                          ),
-                          
+                            );
+                          },
                         );
-                        
-                      },
-                      
-                    );
-                  },
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-
+      
                 bottomNavigationBar: ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
@@ -312,7 +655,7 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> {
                     ),
                   ),
                 ),
-
     );
   }
 }
+

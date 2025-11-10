@@ -280,15 +280,28 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
 
                         const SizedBox(height: 16),
-
                         // Back to Login
                         GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-                          child: Text(
-                            'Already have an account? Sign in',
-                            style: TextStyle(
-                              color: const Color.fromARGB(255, 0, 0, 0),
-                              fontWeight: FontWeight.w500,
+                          onTap: () => Navigator.pushNamed(context, '/login'),
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Already have an account? ',
+                                  style: TextStyle(
+                                    color: const Color.fromARGB(255, 4, 4, 4),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Log in',
+                                  style: TextStyle(
+                                    color: Color.fromARGB(255, 2, 219, 114), // colored word
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

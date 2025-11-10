@@ -94,7 +94,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Nutrition Tracker',
+      title: 'Snap',
       theme: ThemeData(
         textTheme: GoogleFonts.nunitoTextTheme(
           Theme.of(context).textTheme,

@@ -433,10 +433,12 @@ import 'package:flutter/material.dart';
           filled: true,
           fillColor: isEditing ? Colors.grey[100] : Colors.white,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          /*
           suffixIcon: IconButton(
             icon: Icon(isEditing ? Icons.check : Icons.edit, size: 20),
             onPressed: () => setState(() => edits[id] = !(edits[id] ?? false)),
           ),
+          */
         ),
       );
     }

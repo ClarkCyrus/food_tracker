@@ -274,16 +274,30 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 16),
 
                           // 6. Sign-up link
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(context, '/register'),
-                            child: Text(
-                              'Don’t have an account? Sign up',
-                              style: TextStyle(
-                                color: const Color.fromARGB(255, 4, 4, 4),
-                                fontWeight: FontWeight.w500,
-                              ),
+                         GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/register'),
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Don’t have an account? ',
+                                  style: TextStyle(
+                                    color: const Color.fromARGB(255, 4, 4, 4),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Sign up',
+                                  style: TextStyle(
+                                    color: Color.fromARGB(255, 2, 219, 114), // colored word
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
                         ],
                       ),
                     ),
