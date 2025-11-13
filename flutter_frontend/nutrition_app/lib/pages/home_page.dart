@@ -124,6 +124,7 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
   Set<String>? _lastShownReached;
   bool _popupActive = false;  
 
+
   String defaultServerUrl() {
     if (kIsWeb) return  'http://localhost:8000';  // web developer machine 'https://rendertfmodeltest.onrender.com';
     if (Platform.isAndroid) return 'https://rendertfmodeltest.onrender.com'; // Android emulator
@@ -783,89 +784,97 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(246, 255, 255, 255), // dialog background
+          backgroundColor: const Color.fromARGB(246, 255, 255, 255),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           contentPadding: const EdgeInsets.all(16),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: _avatarSignedUrl != null ? NetworkImage(_avatarSignedUrl!) : null,
-                child: _avatarSignedUrl == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.white)
-                    : null,
-              ),
-
-              const SizedBox(height: 12),
-              
-              // User name
-              Text(
-                '$_displayName', // replace with dynamic user name
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () { 
-                  _sendNotification(); // 🔔 test notification
-                },
-                icon: const Icon(Icons.notifications_active),
-                label: const Text('Notifications'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.green,
-                ),
-              ),
-              // Buttons
-              /* ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  // call your change name logic
-                },
-                icon: const Icon(Icons.edit),
-                label: const Text('Change Name'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.green, // text & icon color
-                ),
-              ), ,*/
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () { 
-                  pickAndUploadAvatar(context);
-                },
-                icon: const Icon(Icons.person),
-                label: const Text('Change Photo'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  try {
-                    await Supabase.instance.client.auth.signOut();
-                    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (r) => false);
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Logout failed: $e')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.green,
-                ),
-              ),
-            ],
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Avatar
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: _avatarSignedUrl != null
+                        ? NetworkImage(_avatarSignedUrl!)
+                        : null,
+                    child: _avatarSignedUrl == null
+                        ? const Icon(Icons.person, size: 40, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  // User name
+                  Text(
+                    '$_displayName',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  // Notifications toggle button
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        notificationsEnabled = !notificationsEnabled;
+                        if (notificationsEnabled) {
+                          _enableNotifications();
+                        } else {
+                          _disableNotifications();
+                        }
+                      });
+                    },
+                    icon: Icon(
+                      notificationsEnabled
+                          ? Icons.notifications_active
+                          : Icons.notifications_off,
+                    ),
+                    label: Text(notificationsEnabled
+                        ? 'Turn Off Notifications'
+                        : 'Turn On Notifications'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Change Photo button
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      pickAndUploadAvatar(context);
+                    },
+                    icon: const Icon(Icons.person),
+                    label: const Text('Change Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Logout button
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        await Supabase.instance.client.auth.signOut();
+                        navigatorKey.currentState
+                            ?.pushNamedAndRemoveUntil('/login', (r) => false);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Logout failed: $e')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Logout'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.green,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         );
       },
@@ -1110,19 +1119,48 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
 
     final message = reached.join(', ') + (reached.length > 1 ? ' goals reached!' : ' goal reached!');
     _showGoalPopup(context, message);
+
+    // Send notification if enabled and permission granted
+    if (notificationsEnabled) {
+      bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (isAllowed) {
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+            channelKey: 'basic_channel',
+            title: 'Goal Update',
+            body: message,
+            notificationLayout: NotificationLayout.Default,
+          ),
+        );
+      }
+    }
   }
 
-  void _sendNotification() {
-    AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 1,
-        channelKey: 'basic_channel',
-        title: 'Hey there 👋',
-        body: 'Complete Your Goals Today!',
-        notificationLayout: NotificationLayout.Default, 
-      ),
-    );
+  void _enableNotifications() async {
+    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    if (!isAllowed) {
+      isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
+    }
+
+    if (isAllowed) {
+      // Now safe to send notification
+      AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+          channelKey: 'basic_channel',
+          title: 'Notifications Enabled',
+          body: 'You will now receive goal notifications!',
+          notificationLayout: NotificationLayout.Default,
+        ),
+      );
+    }
   }
+
+  void _disableNotifications() {
+    AwesomeNotifications().cancelAll();
+  }
+
 
   Widget buildCustomAppBar() {
     return Container(
@@ -1826,8 +1864,17 @@ class _NutritionHomePageState extends State<NutritionHomePage> {
                                                                 TextSpan(
                                                                   text: 'This action cannot be undone!\nAre you sure you want to remove ',
                                                                   children: [                                 
-                                                                    TextSpan(text: "${item['label'] ?? 'this food'}", style: const TextStyle(color: Color.fromARGB(255, 0, 0, 0))),
-                                                                    const TextSpan(text: '?'),
+                                                                    TextSpan(
+                                                                    text: (item['label'] ?? 'this food')
+                                                                        .toString()
+                                                                        .replaceAll('_', ' ')
+                                                                        .split(RegExp(r'\s+'))
+                                                                        .map((w) =>
+                                                                            w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+                                                                        .join(' '),
+                                                                    style: const TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                                                                  ),
+                                                                  const TextSpan(text: '?'),
                                                                   ],
                                                                 ),
                                                               ),
